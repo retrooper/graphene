@@ -1,18 +1,30 @@
 package com.github.graphene;
 
 import com.github.graphene.handler.PacketDecoder;
+import com.github.graphene.handler.PacketEncoder;
+import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 public class Graphene {
+    public static final String SERVER_VERSION_NAME = "1.18";
+    public static final int SERVER_PROTOCOL_VERSION = ServerVersion.V_1_18.getProtocolVersion();
+    public static final int MAX_PLAYERS = 100;
+    public static int ONLINE_PLAYERS = 5;
+    public static final String SERVER_DESCRIPTION = "Graphene Server";
+
     public static final int PORT = 25565;
 
     public static void main(String[] args) throws Exception {
@@ -31,11 +43,16 @@ public class Graphene {
                             System.out.println("Connecting!");
                             //This is called when a socket connects
                             User user = new User(ch, ConnectionState.HANDSHAKING);
-                            PacketDecoder handler = new PacketDecoder(user);
+                            PacketDecoder decoder = new PacketDecoder(user);
+                            PacketEncoder encoder = new PacketEncoder(user);
                             ch.pipeline()
                                     //.addLast("cipher_handler", new CipherHandler())
                                     .addLast("packet_splitter", new PacketSplitter())
-                                    .addLast(PacketEvents.DECODER_NAME, handler);
+                                    .addLast(PacketEvents.DECODER_NAME, decoder)
+
+
+                                    .addLast("packet_prepender", new PacketPrepender())
+                                    .addLast(PacketEvents.ENCODER_NAME, encoder);
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)          // (5)

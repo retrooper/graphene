@@ -1,5 +1,6 @@
 package com.github.graphene.wrapper.play.server;
 
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -37,7 +38,7 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
 
     //TODO Constructor
     public WrapperPlayServerJoinGame(int entityID, boolean isHardcore, GameMode gamemode,
-                                     GameMode previousGamemode,
+                                     GameMode previousGameMode,
                                      List<String> worldNames, NBTCompound dimensionCodec, NBTCompound dimension,
                                      String worldName, long hashedSeed, int maxPlayers,
                                      int viewDistance, int simulationDistance,
@@ -47,7 +48,7 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
         this.entityID = entityID;
         this.hardcore = isHardcore;
         this.gameMode = gamemode;
-        this.previousGameMode = previousGamemode;
+        this.previousGameMode = previousGameMode;
         this.worldNames = worldNames;
         this.dimensionCodec = dimensionCodec;
         this.dimension = dimension;
@@ -66,8 +67,14 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
     public void readData() {
         entityID = readInt();
         hardcore = readBoolean();
-        gameMode = readGameMode();
-        previousGameMode = readGameMode();
+        gameMode = GameMode.values()[readByte()];
+        int previousGameModeId = readByte();
+        if (previousGameModeId != -1) {
+            previousGameMode = GameMode.values()[previousGameModeId];
+        }
+        else {
+            previousGameMode = null;
+        }
         int worldCount = readVarInt();
         worldNames = new ArrayList<>(worldCount);
         for (int i = 0; i < worldCount; i++) {
@@ -110,8 +117,13 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
     public void writeData() {
         writeInt(entityID);
         writeBoolean(hardcore);
-        writeGameMode(gameMode);
-        writeGameMode(previousGameMode);
+        writeByte(gameMode.ordinal());
+        if (previousGameMode == null) {
+            writeByte(-1);
+        }
+        else {
+            writeByte(previousGameMode.ordinal());
+        }
         writeVarInt(worldNames.size());
         for (String worldName : worldNames) {
             writeString(worldName);
