@@ -38,3 +38,8 @@ processResources {
     inputs.properties props
     filteringCharset 'UTF-8'
 }
+
+//This makes sure gradle doesn't cache the snapshots
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}

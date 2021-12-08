@@ -7,19 +7,10 @@ import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 
 public class ServerManagerImpl implements ServerManager {
-    private ServerVersion serverVersion;
-
-    @Override
-    public ServerVersion resolveVersionNoCache() {
-        return ServerVersion.V_1_18;
-    }
 
     @Override
     public ServerVersion getVersion() {
-        if (serverVersion == null) {
-            serverVersion = resolveVersionNoCache();
-        }
-        return serverVersion;
+        return ServerVersion.getLatest();
     }
 
     @Override
@@ -40,10 +31,5 @@ public class ServerManagerImpl implements ServerManager {
     @Override
     public void receivePacket(ChannelAbstract channel, PacketWrapper<?> wrapper) {
 
-    }
-
-    @Override
-    public boolean isGeyserAvailable() {
-        return false;
     }
 }

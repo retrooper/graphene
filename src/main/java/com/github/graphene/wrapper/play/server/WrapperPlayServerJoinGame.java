@@ -1,6 +1,5 @@
 package com.github.graphene.wrapper.play.server;
 
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -36,9 +35,8 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
         super(event);
     }
 
-    //TODO Constructor
     public WrapperPlayServerJoinGame(int entityID, boolean isHardcore, GameMode gamemode,
-                                     GameMode previousGameMode,
+                                     @Nullable GameMode previousGameMode,
                                      List<String> worldNames, NBTCompound dimensionCodec, NBTCompound dimension,
                                      String worldName, long hashedSeed, int maxPlayers,
                                      int viewDistance, int simulationDistance,
@@ -67,14 +65,8 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
     public void readData() {
         entityID = readInt();
         hardcore = readBoolean();
-        gameMode = GameMode.values()[readByte()];
-        int previousGameModeId = readByte();
-        if (previousGameModeId != -1) {
-            previousGameMode = GameMode.values()[previousGameModeId];
-        }
-        else {
-            previousGameMode = null;
-        }
+        gameMode = readGameMode();
+        previousGameMode = readGameMode();
         int worldCount = readVarInt();
         worldNames = new ArrayList<>(worldCount);
         for (int i = 0; i < worldCount; i++) {
@@ -117,13 +109,8 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
     public void writeData() {
         writeInt(entityID);
         writeBoolean(hardcore);
-        writeByte(gameMode.ordinal());
-        if (previousGameMode == null) {
-            writeByte(-1);
-        }
-        else {
-            writeByte(previousGameMode.ordinal());
-        }
+        writeGameMode(gameMode);
+        writeGameMode(previousGameMode);
         writeVarInt(worldNames.size());
         for (String worldName : worldNames) {
             writeString(worldName);
