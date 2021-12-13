@@ -5,7 +5,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.player.PlayerManager;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
-import com.github.retrooper.packetevents.protocol.gameprofile.WrappedGameProfile;
+import com.github.retrooper.packetevents.protocol.gameprofile.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,9 +41,9 @@ public class PlayerManagerImpl implements PlayerManager {
     }
 
     @Override
-    public WrappedGameProfile getGameProfile(@NotNull Object player) {
+    public GameProfile getGameProfile(@NotNull Object player) {
         User user = (User) player;
-        return new WrappedGameProfile(user.getUUID(), user.getUsername());
+        return GAME_PROFILES.get(user.getUsername());
     }
 
     @Override

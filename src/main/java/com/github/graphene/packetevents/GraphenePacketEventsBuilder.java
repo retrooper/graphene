@@ -14,6 +14,7 @@ import com.github.retrooper.packetevents.manager.server.ServerManager;
 import com.github.retrooper.packetevents.netty.NettyManager;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.settings.PacketEventsSettings;
+import com.github.retrooper.packetevents.util.LogManager;
 import com.github.retrooper.packetevents.util.PEVersion;
 import com.github.retrooper.packetevents.util.updatechecker.UpdateChecker;
 
@@ -63,6 +64,7 @@ public class GraphenePacketEventsBuilder {
             private final NettyManager nettyManager = new NettyManagerImpl();
             private final ChannelInjector injector = new ChannelInjectorImpl();
             private final UpdateChecker updateChecker = new UpdateChecker();
+            private final LogManager logManager = new LogManager();
             private boolean loaded;
             private boolean initialized;
             private boolean lateBind = false;
@@ -156,6 +158,11 @@ public class GraphenePacketEventsBuilder {
             @Override
             public Logger getLogger() {
                 return logger;
+            }
+
+            @Override
+            public LogManager getLogManager() {
+                return logManager;
             }
 
             @Override

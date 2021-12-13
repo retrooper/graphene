@@ -18,12 +18,20 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.util.logging.Logger;
+
 public class Graphene {
     public static final String SERVER_VERSION_NAME = "1.18";
     public static final int SERVER_PROTOCOL_VERSION = ServerVersion.V_1_18.getProtocolVersion();
     public static final int MAX_PLAYERS = 100;
     public static int ONLINE_PLAYERS = 5;
     public static final String SERVER_DESCRIPTION = "Graphene Server";
+    public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
+    //Generate 1024 bit RSA keypair
+    public static final KeyPair KEY_PAIR = generateKeyPair();
 
     public static final int PORT = 25565;
 
@@ -70,5 +78,16 @@ public class Graphene {
             bossGroup.shutdownGracefully();
         }
         PacketEvents.getAPI().terminate();
+    }
+
+    public static KeyPair generateKeyPair() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(1024);
+            return keyPairGenerator.generateKeyPair();
+        } catch (NoSuchAlgorithmException ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 }

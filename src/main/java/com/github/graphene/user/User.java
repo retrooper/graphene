@@ -1,10 +1,16 @@
 package com.github.graphene.user;
 
+import com.github.graphene.user.textures.TextureProperty;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.google.gson.JsonArray;
 import io.netty.channel.Channel;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class User {
@@ -17,6 +23,10 @@ public class User {
     private final int entityID = ENTITY_COUNT++;
     private GameMode gameMode = GameMode.SURVIVAL;
     private GameMode previousGameMode = null;
+    private String serverID = "";
+    private byte[] verifyToken;
+    private String serverAddress;
+    private List<TextureProperty> textureProperties = new ArrayList<>();
 
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
@@ -79,6 +89,38 @@ public class User {
         this.previousGameMode = previousGameMode;
     }
 
+    public String getServerAddress() {
+        return serverAddress;
+    }
+
+    public void setServerAddress(String serverAddress) {
+        this.serverAddress = serverAddress;
+    }
+
+    public String getServerId() {
+        return serverID;
+    }
+
+    public void setServerId(String serverID) {
+        this.serverID = serverID;
+    }
+
+    public byte[] getVerifyToken() {
+        return verifyToken;
+    }
+
+    public void setVerifyToken(byte[] verifyToken) {
+        this.verifyToken = verifyToken;
+    }
+
+    public List<TextureProperty> getTextureProperties() {
+        return textureProperties;
+    }
+
+    public InetSocketAddress getAddress() {
+        return (InetSocketAddress) channel.remoteAddress();
+    }
+    
     public void forceDisconnect() {
         channel.close();
     }
