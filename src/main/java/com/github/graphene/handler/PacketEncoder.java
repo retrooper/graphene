@@ -14,6 +14,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
 
     public PacketEncoder(User user) {
         this.user = user;
+        //the packet decryptor is excellent
     }
 
     public void handle(ChannelHandlerContextAbstract ctx, ByteBufAbstract transformedBuf, ByteBuf output) {

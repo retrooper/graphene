@@ -7,11 +7,11 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import javax.crypto.Cipher;
 import java.util.List;
 
-public class DecryptionHandler extends ByteToMessageDecoder {
+public class PacketDecryption extends ByteToMessageDecoder {
     private final Cipher cipher;
     private byte[] heap = new byte[0];
 
-    public DecryptionHandler(Cipher cipher) {
+    public PacketDecryption(Cipher cipher) {
         this.cipher = cipher;
     }
 

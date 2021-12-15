@@ -5,13 +5,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 import javax.crypto.Cipher;
-import java.util.List;
 
-public class EncryptionHandler extends MessageToByteEncoder<ByteBuf> {
+public class PacketEncryption extends MessageToByteEncoder<ByteBuf> {
     private final Cipher cipher;
     private byte[] heap = new byte[0];
 
-    public EncryptionHandler(Cipher cipher) {
+    public PacketEncryption(Cipher cipher) {
         this.cipher = cipher;
     }
 

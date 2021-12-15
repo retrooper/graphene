@@ -1,8 +1,8 @@
 package com.github.graphene.packetevents;
 
 import com.github.graphene.Graphene;
-import com.github.graphene.handler.DecryptionHandler;
-import com.github.graphene.handler.EncryptionHandler;
+import com.github.graphene.handler.PacketDecryption;
+import com.github.graphene.handler.PacketEncryption;
 import com.github.graphene.user.User;
 import com.github.graphene.user.textures.TextureProperty;
 import com.github.graphene.util.UUIDUtil;
@@ -17,9 +17,7 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.component.serializer.ComponentSerializer;
 import com.github.retrooper.packetevents.protocol.nbt.*;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
-import com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
@@ -177,22 +175,22 @@ public class GraphenePacketListener implements PacketListener {
                                 user.setUUID(uuid);
                                 user.setUsername(username);
 
-                                // yeah i don't know how to use the
-                                // encryption/decryption handler you've implemented btw
+                                WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
+                                PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
+                                Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
+
+                                ChannelPipeline pipeline = user.getChannel().pipeline();
+
                                 SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
-                                Cipher encryptCipher = Cipher.getInstance("AES_128/CFB/NoPadding");
-                                encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
 
                                 Cipher decryptCipher = Cipher.getInstance("AES_128/CFB/NoPadding");
                                 decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
 
-                                ChannelPipeline pipeline = user.getChannel().pipeline();
-                                //TODO Change handler name to packet_decrypter and packet_encryptor
-                                pipeline.addBefore("packet_splitter", "decryption_handler", new DecryptionHandler(decryptCipher));
-                                pipeline.addBefore("packet_prepender", "encryption_handler", new EncryptionHandler(encryptCipher));
+                                pipeline.addBefore("packet_splitter", "decryption_handler", new PacketDecryption(decryptCipher));
 
-                                Graphene.LOGGER.info(username + " has logged in.");
-
+                                Cipher encryptCipher = Cipher.getInstance("AES_128/CFB/NoPadding");
+                                encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
+                                pipeline.addBefore("packet_prepender", "encryption_handler", new PacketEncryption(encryptCipher));
                                 sendPostLoginPackets(event);
                             } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
                                     | InvalidKeyException | InvalidAlgorithmParameterException ex) {
@@ -207,17 +205,7 @@ public class GraphenePacketListener implements PacketListener {
 
                 break;
             case PLAY:
-                if (event.getPacketType() == PacketType.Play.Client.TAB_COMPLETE) {
-                    WrapperPlayClientTabComplete tabComplete = new WrapperPlayClientTabComplete(event);
-                    String text = tabComplete.getText();
-                    TabCompleteAttribute tabCompleteAttribute =
-                            PacketEvents.getAPI().getPlayerManager().getAttributeOrDefault(user.getUUID(),
-                                    TabCompleteAttribute.class,
-                                    new TabCompleteAttribute());
-                    tabCompleteAttribute.setInput(text);
-                    Optional<Integer> transactionID = tabComplete.getTransactionId();
-                    transactionID.ifPresent(tabComplete::setTransactionId);
-                } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
+                if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
                     WrapperPlayClientSettings settings = new WrapperPlayClientSettings(event);
                     System.out.println("got settings, hand: " + settings.getHand());
                 }
@@ -228,17 +216,11 @@ public class GraphenePacketListener implements PacketListener {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
-        if (event.getPacketType() == PacketType.Login.Server.LOGIN_SUCCESS) {
-            //Transition into the PLAY connection state
-            PacketEvents.getAPI().getPlayerManager().changeConnectionState(event.getChannel(), ConnectionState.PLAY);
-        }
+
     }
 
     public static void sendPostLoginPackets(PacketReceiveEvent event) {
         User user = (User) event.getPlayer();
-        WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
-        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
-        Graphene.LOGGER.info("[Graphene] " + user.getUsername() + " has logged in.");
         List<String> worldNames = new ArrayList<>();
         worldNames.add("world");
         worldNames.add("world2");
@@ -303,6 +285,7 @@ public class GraphenePacketListener implements PacketListener {
                 true, true, false, true);
 
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), joinGame);
+        System.out.println("send join game!");
 
         WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), heldItemChange);

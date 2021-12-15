@@ -1,8 +1,5 @@
 package com.github.graphene.handler;
 
-import com.github.retrooper.packetevents.event.ProtocolPacketEvent;
-import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
