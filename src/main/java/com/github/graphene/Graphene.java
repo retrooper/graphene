@@ -57,8 +57,6 @@ public class Graphene {
                                     //.addLast("cipher_handler", new CipherHandler())
                                     .addLast("packet_splitter", new PacketSplitter())
                                     .addLast(PacketEvents.DECODER_NAME, decoder)
-
-
                                     .addLast("packet_prepender", new PacketPrepender())
                                     .addLast(PacketEvents.ENCODER_NAME, encoder);
                         }

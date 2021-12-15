@@ -1,14 +1,16 @@
 package com.github.graphene.user;
 
 import com.github.graphene.user.textures.TextureProperty;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
-import com.google.gson.JsonArray;
+import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -123,6 +125,25 @@ public class User {
     
     public void forceDisconnect() {
         channel.close();
+    }
+
+    public void kickLogin(String reason) {
+        TextComponent KickMessageBuilder = new TextComponent();
+        KickMessageBuilder.setText(reason);
+
+        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(KickMessageBuilder.buildJson().toString());
+
+        PacketEvents.getAPI().getPlayerManager().sendPacket(getChannel(), disconnect);
+    }
+
+    public void kick(String reason) {
+        // add translation components PLEASE
+        TextComponent KickMessageBuilder = new TextComponent();
+        KickMessageBuilder.setText(reason);
+
+        WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(KickMessageBuilder.buildJson().toString());
+
+        PacketEvents.getAPI().getPlayerManager().sendPacket(getChannel(), disconnect);
     }
 
 }
