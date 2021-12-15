@@ -47,14 +47,13 @@ public class Graphene {
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        public void initChannel(SocketChannel ch) throws Exception {
+                        public void initChannel(SocketChannel channel) throws Exception {
                             System.out.println("Connecting!");
                             //This is called when a socket connects
-                            User user = new User(ch, ConnectionState.HANDSHAKING);
+                            User user = new User(channel, ConnectionState.HANDSHAKING);
                             PacketDecoder decoder = new PacketDecoder(user);
                             PacketEncoder encoder = new PacketEncoder(user);
-                            ch.pipeline()
-                                    //.addLast("cipher_handler", new CipherHandler())
+                            channel.pipeline()
                                     .addLast("packet_splitter", new PacketSplitter())
                                     .addLast(PacketEvents.DECODER_NAME, decoder)
                                     .addLast("packet_prepender", new PacketPrepender())

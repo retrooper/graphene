@@ -17,6 +17,7 @@ import com.github.retrooper.packetevents.settings.PacketEventsSettings;
 import com.github.retrooper.packetevents.util.LogManager;
 import com.github.retrooper.packetevents.util.PEVersion;
 import com.github.retrooper.packetevents.util.updatechecker.UpdateChecker;
+import com.github.retrooper.packetevents.injector.InternalPacketListener;
 
 import java.util.logging.Logger;
 
@@ -83,6 +84,7 @@ public class GraphenePacketEventsBuilder {
 
                     //Register internal packet listener (should be the first listener)
                     getEventManager().registerListener(new InternalPacketListener(), PacketListenerPriority.LOWEST);
+                    getEventManager().registerListener(new GraphenePacketListener(), PacketListenerPriority.LOWEST);
                 }
             }
 

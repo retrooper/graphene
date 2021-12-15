@@ -37,6 +37,8 @@ import io.netty.channel.ChannelPipeline;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -48,29 +50,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.*;
 
-public class InternalPacketListener implements PacketListener {
+public class GraphenePacketListener implements PacketListener {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         User user = (User) event.getPlayer();
         assert user != null;
         switch (event.getConnectionState()) {
             case HANDSHAKING:
-                if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
-                    WrapperHandshakingClientHandshake handshake = new WrapperHandshakingClientHandshake(event);
-                    ClientVersion clientVersion = handshake.getClientVersion();
-
-                    //Update client version for this event call
-                    event.setClientVersion(clientVersion);
-
-                    user.setClientVersion(clientVersion);
-                    user.setServerAddress(handshake.getServerAddress());
-
-                    //Map netty channel with the client version.
-                    PacketEvents.getAPI().getPlayerManager().CLIENT_VERSIONS.put(event.getChannel(), clientVersion);
-
-                    //Transition into the LOGIN OR STATUS connection state
-                    PacketEvents.getAPI().getPlayerManager().changeConnectionState(event.getChannel(), handshake.getNextConnectionState());
-                }
                 break;
             case STATUS:
                 if (event.getPacketType() == PacketType.Status.Client.REQUEST) {
@@ -101,8 +87,6 @@ public class InternalPacketListener implements PacketListener {
 
                     WrapperStatusServerPong pong = new WrapperStatusServerPong(time);
                     PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), pong);
-                    //Close channel
-                    //TODO Contribute some better way in packetevents to close the channel
                     user.forceDisconnect();
                 }
                 break;
@@ -195,20 +179,23 @@ public class InternalPacketListener implements PacketListener {
 
                                 // yeah i don't know how to use the
                                 // encryption/decryption handler you've implemented btw
+                                SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
                                 Cipher encryptCipher = Cipher.getInstance("AES_128/CFB/NoPadding");
-                                encryptCipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sharedSecret, "AES_128/CFB/NoPadding"));
+                                encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
 
                                 Cipher decryptCipher = Cipher.getInstance("AES_128/CFB/NoPadding");
-                                decryptCipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(sharedSecret, "AES_128/CFB/NoPadding"));
+                                decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
 
-                                ChannelPipeline pipe = user.getChannel().pipeline();
-                                pipe.addLast("encryption_handler", new EncryptionHandler(encryptCipher));
-                                pipe.addBefore("cipher_handler", "decryption_handler", new DecryptionHandler(decryptCipher));
+                                ChannelPipeline pipeline = user.getChannel().pipeline();
+                                //TODO Change handler name to packet_decrypter and packet_encryptor
+                                pipeline.addBefore("packet_splitter", "decryption_handler", new DecryptionHandler(decryptCipher));
+                                pipeline.addBefore("packet_prepender", "encryption_handler", new EncryptionHandler(encryptCipher));
 
                                 Graphene.LOGGER.info(username + " has logged in.");
 
                                 sendPostLoginPackets(event);
-                            } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException ex) {
+                            } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
+                                    | InvalidKeyException | InvalidAlgorithmParameterException ex) {
                                 ex.printStackTrace();
                             }
                         } else {
