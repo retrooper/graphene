@@ -42,8 +42,8 @@ public class PlayerManagerImpl implements PlayerManager {
 
     @Override
     public GameProfile getGameProfile(@NotNull Object player) {
-        User user = (User) player;
-        return GAME_PROFILES.get(user.getUsername());
+        ChannelAbstract channel = PacketEvents.getAPI().getNettyManager().wrapChannel(((User) player).getChannel());
+        return getGameProfile(channel);
     }
 
     @Override

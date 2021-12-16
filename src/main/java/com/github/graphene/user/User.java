@@ -1,9 +1,9 @@
 package com.github.graphene.user;
 
-import com.github.graphene.user.textures.TextureProperty;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
+import com.github.retrooper.packetevents.protocol.gameprofile.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
@@ -11,8 +11,6 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDi
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public class User {
@@ -28,11 +26,19 @@ public class User {
     private String serverID = "";
     private byte[] verifyToken;
     private String serverAddress;
-    private List<TextureProperty> textureProperties = new ArrayList<>();
+    private GameProfile gameProfile;
 
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
         this.state = state;
+    }
+
+    public GameProfile getGameProfile() {
+        return gameProfile;
+    }
+
+    public void setGameProfile(GameProfile gameProfile) {
+        this.gameProfile = gameProfile;
     }
 
     public Channel getChannel() {
@@ -115,14 +121,10 @@ public class User {
         this.verifyToken = verifyToken;
     }
 
-    public List<TextureProperty> getTextureProperties() {
-        return textureProperties;
-    }
-
     public InetSocketAddress getAddress() {
         return (InetSocketAddress) channel.remoteAddress();
     }
-    
+
     public void forceDisconnect() {
         channel.close();
     }

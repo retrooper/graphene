@@ -4,7 +4,6 @@ import com.github.graphene.Graphene;
 import com.github.graphene.handler.PacketDecryption;
 import com.github.graphene.handler.PacketEncryption;
 import com.github.graphene.user.User;
-import com.github.graphene.user.textures.TextureProperty;
 import com.github.graphene.util.UUIDUtil;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.graphene.wrapper.play.server.WrapperStatusServerResponse;
@@ -12,9 +11,9 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
-import com.github.retrooper.packetevents.manager.player.attributes.TabCompleteAttribute;
-import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.component.serializer.ComponentSerializer;
+import com.github.retrooper.packetevents.protocol.gameprofile.GameProfile;
+import com.github.retrooper.packetevents.protocol.gameprofile.TextureProperty;
 import com.github.retrooper.packetevents.protocol.nbt.*;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
@@ -23,7 +22,6 @@ import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClient
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerLoginSuccess;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTabComplete;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHeldItemChange;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 import com.github.retrooper.packetevents.wrapper.status.client.WrapperStatusClientPing;
@@ -112,6 +110,7 @@ public class GraphenePacketListener implements PacketListener {
                     Graphene.LOGGER.info("Sent encryption request to " + user.getUsername());
                 } else if (event.getPacketType() == PacketType.Login.Client.ENCRYPTION_RESPONSE) {
                     WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(event);
+                    user.setGameProfile(new GameProfile(user.getUUID(), user.getUsername()));
 
                     // check authentication with mc servers on separate thread
                     new Thread(() -> {
@@ -162,6 +161,7 @@ public class GraphenePacketListener implements PacketListener {
                                 UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
                                 JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
 
+                                GameProfile profile = user.getGameProfile();
                                 for (JsonElement element : textureProperties) {
                                     JsonObject property = element.getAsJsonObject();
 
@@ -169,15 +169,12 @@ public class GraphenePacketListener implements PacketListener {
                                     String value = property.get("value").getAsString();
                                     String signature = property.get("signature").getAsString();
 
-                                    user.getTextureProperties().add(new TextureProperty(name, value, signature));
+                                    profile.getTextureProperties().add(new TextureProperty(name, value, signature));
                                 }
+                                user.setGameProfile(profile);
 
                                 user.setUUID(uuid);
                                 user.setUsername(username);
-
-                                WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
-                                PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
-                                Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
 
                                 ChannelPipeline pipeline = user.getChannel().pipeline();
 
@@ -200,14 +197,14 @@ public class GraphenePacketListener implements PacketListener {
                             Graphene.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
                             user.forceDisconnect();
                         }
-                     }).start();
+                    }).start();
                 }
 
                 break;
             case PLAY:
                 if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
                     WrapperPlayClientSettings settings = new WrapperPlayClientSettings(event);
-                    System.out.println("got settings, hand: " + settings.getHand());
+                    System.out.println("got settings, hand: " + settings.getMainHand());
                 }
                 break;
         }
@@ -221,6 +218,10 @@ public class GraphenePacketListener implements PacketListener {
 
     public static void sendPostLoginPackets(PacketReceiveEvent event) {
         User user = (User) event.getPlayer();
+        WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
+        Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
+
         List<String> worldNames = new ArrayList<>();
         worldNames.add("world");
         worldNames.add("world2");
