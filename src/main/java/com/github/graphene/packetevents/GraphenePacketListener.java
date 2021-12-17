@@ -25,6 +25,7 @@ import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClient
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerLoginSuccess;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import com.github.retrooper.packetevents.wrapper.status.client.WrapperStatusClientPing;
@@ -32,6 +33,7 @@ import com.github.retrooper.packetevents.wrapper.status.server.WrapperStatusServ
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPipeline;
 
 import javax.crypto.Cipher;
@@ -213,6 +215,10 @@ public class GraphenePacketListener implements PacketListener {
                     WrapperPlayClientSettings settings = new WrapperPlayClientSettings(event);
                     System.out.println("got settings, hand: " + settings.getMainHand());
                 }
+                else if (event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE) {
+                    WrapperPlayClientChatMessage cm = new WrapperPlayClientChatMessage(event);
+                    System.out.println("got chat message: " + cm.getMessage());
+                }
                 break;
         }
 
@@ -265,13 +271,19 @@ public class GraphenePacketListener implements PacketListener {
                 false, user.getGameMode(), user.getPreviousGameMode(),
                 worldNames, dimensionCodec, dimension, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20,
                 true, true, false, true);
-
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), joinGame);
 
-        WrapperPlayServerPluginMessage pluginMessage = new WrapperPlayServerPluginMessage("minecraft:brand", "Graphene".getBytes());
+        String brandName = "Graphene";
+
+        PacketWrapper<?> brandNameBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
+        brandNameBuffer.writeByteArray(brandName.getBytes());
+        byte[] brandNameBytes = new byte[brandNameBuffer.buffer.readableBytes()];
+        brandNameBuffer.buffer.readBytes(brandNameBytes);
+
+
+        WrapperPlayServerPluginMessage pluginMessage = new WrapperPlayServerPluginMessage("minecraft:brand", brandNameBytes);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), pluginMessage);
 
-        // server difficulty
         WrapperPlayServerDifficulty difficulty = new WrapperPlayServerDifficulty(Difficulty.HARD, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), difficulty);
 
@@ -280,6 +292,13 @@ public class GraphenePacketListener implements PacketListener {
 
         WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), heldItemChange);
+
+        List<WrapperPlayServerPlayerInfo.PlayerData> playerDataList = new ArrayList<>();
+        //TODO User#getPing and then implement a getPing in packetevents
+        WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(user.getUsername(), user.getGameProfile(), user.getGameMode(), 100);
+        playerDataList.add(data);
+        WrapperPlayServerPlayerInfo playerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, user.getUUID(), playerDataList);
+        //PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), playerInfo);
 
         WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(user.getEntityId(), 28);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), entityStatus);
