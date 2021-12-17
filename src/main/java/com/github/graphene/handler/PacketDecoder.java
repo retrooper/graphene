@@ -1,10 +1,12 @@
 package com.github.graphene.handler;
 
+import com.github.graphene.packetevents.GraphenePacketListener;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.netty.channel.ChannelHandlerContextAbstract;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -43,6 +45,20 @@ public class PacketDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> out) {
-        handle(PacketEvents.getAPI().getNettyManager().wrapChannelHandlerContext(ctx), PacketEvents.getAPI().getNettyManager().wrapByteBuf(byteBuf), out);
+        if (byteBuf.readableBytes() != 0) {
+            try {
+                handle(PacketEvents.getAPI().getNettyManager().wrapChannelHandlerContext(ctx), PacketEvents.getAPI().getNettyManager().wrapByteBuf(byteBuf), out);
+            } catch (Exception e) {
+                ctx.channel().close();
+            }
+        }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        if (user.getState() == ConnectionState.PLAY) {
+            GraphenePacketListener.handleLeave(user);
+        }
+        super.channelInactive(ctx);
     }
 }

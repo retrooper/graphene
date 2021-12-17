@@ -5,10 +5,13 @@ import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
+import com.github.graphene.packetevents.GraphenePacketListener;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -21,15 +24,14 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Queue;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 public class Graphene {
-    public static final String SERVER_VERSION_NAME = "1.18";
-    public static final int SERVER_PROTOCOL_VERSION = ServerVersion.V_1_18.getProtocolVersion();
+    public static final String SERVER_VERSION_NAME = ServerVersion.getLatest().getReleaseName();
+    public static final int SERVER_PROTOCOL_VERSION = ServerVersion.getLatest().getProtocolVersion();
     public static final int MAX_PLAYERS = 100;
-    public static int ONLINE_PLAYERS = 5;
     public static final String SERVER_DESCRIPTION = "Graphene Server";
     public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
     //Generate 1024 bit RSA keypair
@@ -41,6 +43,21 @@ public class Graphene {
     public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
     public static final int PORT = 25565;
+
+    public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
+
+    public static final ScheduledFuture<?> KEEP_ALIVE_SCHEDULER = Executors.newScheduledThreadPool(3).scheduleAtFixedRate(() -> {
+        for (User user : USERS) {
+            //TODO Change to server keep alive
+            long id = (long) (Math.random() * 1000L);
+            user.setExpectedKeepAliveId(id);
+            WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive(id);
+            ChannelAbstract channel = PacketEvents.getAPI().getNettyManager().wrapChannel(user.getChannel());
+            PacketEvents.getAPI().getPlayerManager().sendPacket(channel, keepAlive);
+            System.out.println("sent keep alive to " + user.getUsername());
+        }
+    },0L, 20L, TimeUnit.SECONDS);
+
 
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();

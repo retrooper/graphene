@@ -2,6 +2,7 @@ package com.github.graphene.user;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.chat.Color;
 import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
 import com.github.retrooper.packetevents.protocol.gameprofile.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -27,6 +28,7 @@ public class User {
     private byte[] verifyToken;
     private String serverAddress;
     private GameProfile gameProfile;
+    private long expectedKeepAliveId = 0L;
 
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
@@ -129,23 +131,23 @@ public class User {
         channel.close();
     }
 
+
     public void kickLogin(String reason) {
-        TextComponent KickMessageBuilder = new TextComponent();
-        KickMessageBuilder.setText(reason);
-
-        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(KickMessageBuilder.buildJson().toString());
-
+        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build().toString());
         PacketEvents.getAPI().getPlayerManager().sendPacket(getChannel(), disconnect);
     }
 
     public void kick(String reason) {
-        // add translation components PLEASE
-        TextComponent KickMessageBuilder = new TextComponent();
-        KickMessageBuilder.setText(reason);
-
-        WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(KickMessageBuilder.buildJson().toString());
-
+        WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build());
         PacketEvents.getAPI().getPlayerManager().sendPacket(getChannel(), disconnect);
+    }
+
+    public void setExpectedKeepAliveId(long expectedKeepAliveId) {
+        this.expectedKeepAliveId = expectedKeepAliveId;
+    }
+
+    public long getExpectedKeepAliveId() {
+        return expectedKeepAliveId;
     }
 
 }
