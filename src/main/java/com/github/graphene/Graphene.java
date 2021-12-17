@@ -21,6 +21,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class Graphene {
@@ -32,10 +34,16 @@ public class Graphene {
     public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
+    // ExecutorService used instead of creating threads normally because it queues
+    // up tasks in case of the server being botted - saving expensive resources.
+    // Since most modern CPUs allow for 2 threads/core, we can roughly estimate
+    // the amount of total WorkerThreads we can allocate for the server.
+    public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
     public static final int PORT = 25565;
 
     public static void main(String[] args) throws Exception {
+        long startTime = System.currentTimeMillis();
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().init();
@@ -48,8 +56,6 @@ public class Graphene {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel channel) throws Exception {
-                            System.out.println("Connecting!");
-                            //This is called when a socket connects
                             User user = new User(channel, ConnectionState.HANDSHAKING);
                             PacketDecoder decoder = new PacketDecoder(user);
                             PacketEncoder encoder = new PacketEncoder(user);
@@ -62,6 +68,8 @@ public class Graphene {
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)          // (5)
                     .childOption(ChannelOption.SO_KEEPALIVE, true); // (6)
+
+            Graphene.LOGGER.info("Starting Minecraft server on *:" + PORT);
 
             // Bind and start to accept incoming connections.
             ChannelFuture f = b.bind(PORT).sync();

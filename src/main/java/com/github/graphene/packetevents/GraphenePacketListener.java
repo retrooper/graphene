@@ -112,8 +112,11 @@ public class GraphenePacketListener implements PacketListener {
                     WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(event);
                     user.setGameProfile(new GameProfile(user.getUUID(), user.getUsername()));
 
-                    // check authentication with mc servers on separate thread
-                    new Thread(() -> {
+                    Graphene.LOGGER.info("Calling thread-pool for authenticating user " + user.getUsername() + "!");
+
+                    // Authenticate and handle player connection on a separate
+                    // ExecutorService pool of threads.
+                    Graphene.WORKER_THREADS.execute(() -> {
                         byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Graphene.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
                         PrivateKey privateKey = Graphene.KEY_PAIR.getPrivate();
                         byte[] sharedSecret = MinecraftEncryptionUtil.decrypt(privateKey.getAlgorithm(), privateKey, encryptionResponse.getEncryptedSharedSecret());
@@ -197,7 +200,7 @@ public class GraphenePacketListener implements PacketListener {
                             Graphene.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
                             user.forceDisconnect();
                         }
-                    }).start();
+                    });
                 }
 
                 break;
@@ -298,8 +301,8 @@ public class GraphenePacketListener implements PacketListener {
         flags |= 0x04;
         flags |= 0x08;
         flags |= 0x10;
-        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(0, 0, 0, 0.0f, 0.0f, flags, 0);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
-        System.out.println("send position and look!");
+//        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(0, 0, 0, 0.0f, 0.0f, flags, 0);
+//        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
+//        System.out.println("send position and look!");
     }
 }
