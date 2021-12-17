@@ -3,6 +3,7 @@ package com.github.graphene.packetevents;
 import com.github.graphene.Graphene;
 import com.github.graphene.handler.PacketDecryptionHandler;
 import com.github.graphene.handler.PacketEncryptionHandler;
+import com.github.graphene.packetevents.manager.netty.ByteBufUtil;
 import com.github.graphene.user.User;
 import com.github.graphene.util.UUIDUtil;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
@@ -11,19 +12,21 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.component.serializer.ComponentSerializer;
 import com.github.retrooper.packetevents.protocol.gameprofile.GameProfile;
 import com.github.retrooper.packetevents.protocol.gameprofile.TextureProperty;
-import com.github.retrooper.packetevents.protocol.nbt.*;
+import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.world.Difficulty;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerLoginSuccess;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHeldItemChange;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 import com.github.retrooper.packetevents.wrapper.status.client.WrapperStatusClientPing;
 import com.github.retrooper.packetevents.wrapper.status.server.WrapperStatusServerPong;
 import com.google.gson.JsonArray;
@@ -224,26 +227,33 @@ public class GraphenePacketListener implements PacketListener {
         User user = (User) event.getPlayer();
         WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
+        user.setState(ConnectionState.PLAY);
         Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
 
         byte[] dimensionBytes = new byte[0];
         try (InputStream dimensionInfo = Graphene.class.getClassLoader().getResourceAsStream("RawDimensions.bytes")) {
             dimensionBytes = new byte[dimensionInfo.available()];
             dimensionInfo.read(dimensionBytes);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
 
-        byte[] dimensionCodec = new byte[0];
+        byte[] dimensionCodecBytes = new byte[0];
         try (InputStream dimensionCodecInfo = Graphene.class.getClassLoader().getResourceAsStream("RawCodec.bytes")) {
-            dimensionCodec = new byte[dimensionCodecInfo.available()];
-            dimensionCodecInfo.read(dimensionCodec);
-        }
-        catch (IOException e) {
+            dimensionCodecBytes = new byte[dimensionCodecInfo.available()];
+            dimensionCodecInfo.read(dimensionCodecBytes);
+        } catch (IOException e) {
             e.printStackTrace();
         }
+
+        PacketWrapper<?> dimensionBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
+        dimensionBuffer.buffer.writeBytes(dimensionBytes);
+        NBTCompound dimension = dimensionBuffer.readNBT();
+
+        PacketWrapper<?> dimensionCodecBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
+        dimensionCodecBuffer.buffer.writeBytes(dimensionCodecBytes);
+        NBTCompound dimensionCodec = dimensionCodecBuffer.readNBT();
 
         List<String> worldNames = new ArrayList<>();
         worldNames.add("minecraft:overworld");
@@ -251,20 +261,32 @@ public class GraphenePacketListener implements PacketListener {
         worldNames.add("minecraft:the_end");
         long hashedSeed = 0L;
 
-        System.out.println("dc: " + dimensionCodec.length + ", dimensions: " + dimensionBytes.length);
-
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(user.getEntityId(),
                 false, user.getGameMode(), user.getPreviousGameMode(),
-                worldNames, dimensionCodec, dimensionBytes, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20,
+                worldNames, dimensionCodec, dimension, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20,
                 true, true, false, true);
 
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), joinGame);
-        System.out.println("send join game!");
+
+        WrapperPlayServerPluginMessage pluginMessage = new WrapperPlayServerPluginMessage("minecraft:brand", "Graphene".getBytes());
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), pluginMessage);
+
+        // server difficulty
+        WrapperPlayServerDifficulty difficulty = new WrapperPlayServerDifficulty(Difficulty.HARD, true);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), difficulty);
+
+        WrapperPlayServerPlayerAbilities playerAbilities = new WrapperPlayServerPlayerAbilities(false, false, false, false, 0.05f, 0.1f);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), playerAbilities);
 
         WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), heldItemChange);
 
-        System.out.println("send held item change!");
+        WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(user.getEntityId(), 28);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), entityStatus);
+
+        // send current player information
+
+        // send chunks
 
         WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(0, 6, 0, 0.0f, 0.0f, 0, 0, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
