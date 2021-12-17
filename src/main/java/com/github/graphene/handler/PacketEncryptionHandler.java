@@ -6,11 +6,11 @@ import io.netty.handler.codec.MessageToByteEncoder;
 
 import javax.crypto.Cipher;
 
-public class PacketEncryption extends MessageToByteEncoder<ByteBuf> {
+public class PacketEncryptionHandler extends MessageToByteEncoder<ByteBuf> {
     private final Cipher cipher;
     private byte[] heap = new byte[0];
 
-    public PacketEncryption(Cipher cipher) {
+    public PacketEncryptionHandler(Cipher cipher) {
         this.cipher = cipher;
     }
 

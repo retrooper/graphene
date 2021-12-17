@@ -19,8 +19,10 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
     private GameMode previousGameMode;
 
     private List<String> worldNames;
-    private NBTCompound dimensionCodec;
-    private NBTCompound dimension;
+    //private NBTCompound dimensionCodec;
+    //private NBTCompound dimension;
+    private byte[] dimensionCodec;
+    private byte[] dimension;
     private String worldName;
     private long hashedSeed;
     private int maxPlayers;
@@ -34,10 +36,38 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
     public WrapperPlayServerJoinGame(PacketSendEvent event) {
         super(event);
     }
-
+/*
     public WrapperPlayServerJoinGame(int entityID, boolean isHardcore, GameMode gamemode,
                                      @Nullable GameMode previousGameMode,
                                      List<String> worldNames, NBTCompound dimensionCodec, NBTCompound dimension,
+                                     String worldName, long hashedSeed, int maxPlayers,
+                                     int viewDistance, int simulationDistance,
+                                     boolean reducedDebugInfo, boolean enableRespawnScreen,
+                                     boolean isDebug, boolean isFlat) {
+        super(PacketType.Play.Server.JOIN_GAME);
+        this.entityID = entityID;
+        this.hardcore = isHardcore;
+        this.gameMode = gamemode;
+        this.previousGameMode = previousGameMode;
+        this.worldNames = worldNames;
+        this.dimensionCodec = dimensionCodec;
+        this.dimension = dimension;
+        this.worldName = worldName;
+        this.hashedSeed = hashedSeed;
+        this.maxPlayers = maxPlayers;
+        this.viewDistance = viewDistance;
+        this.simulationDistance = simulationDistance;
+        this.reducedDebugInfo = reducedDebugInfo;
+        this.enableRespawnScreen = enableRespawnScreen;
+        this.isDebug = isDebug;
+        this.isFlat = isFlat;
+    }
+*/
+
+
+    public WrapperPlayServerJoinGame(int entityID, boolean isHardcore, GameMode gamemode,
+                                     @Nullable GameMode previousGameMode,
+                                     List<String> worldNames, byte[] dimensionCodec, byte[] dimension,
                                      String worldName, long hashedSeed, int maxPlayers,
                                      int viewDistance, int simulationDistance,
                                      boolean reducedDebugInfo, boolean enableRespawnScreen,
@@ -72,8 +102,8 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
         for (int i = 0; i < worldCount; i++) {
             worldNames.add(readString());
         }
-        dimensionCodec = readNBT();
-        dimension = readNBT();
+        //dimensionCodec = readNBT();
+        //dimension = readNBT();
         worldName = readString();
         hashedSeed = readLong();
         maxPlayers = readVarInt();
@@ -115,8 +145,8 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
         for (String worldName : worldNames) {
             writeString(worldName);
         }
-        writeNBT(dimensionCodec);
-        writeNBT(dimension);
+        writeBytes(dimensionCodec);
+        writeBytes(dimension);
         writeString(worldName);
         writeLong(hashedSeed);
         writeVarInt(maxPlayers);
@@ -169,21 +199,21 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
         this.worldNames = worldNames;
     }
 
-    public NBTCompound getDimensionCodec() {
-        return dimensionCodec;
-    }
+    //public NBTCompound getDimensionCodec() {
+        //return dimensionCodec;
+    //}
 
-    public void setDimensionCodec(NBTCompound dimensionCodec) {
-        this.dimensionCodec = dimensionCodec;
-    }
+    //public void setDimensionCodec(NBTCompound dimensionCodec) {
+        //this.dimensionCodec = dimensionCodec;
+    //}
 
-    public NBTCompound getDimension() {
-        return dimension;
-    }
+    //public NBTCompound getDimension() {
+      //  return dimension;
+    //}
 
-    public void setDimension(NBTCompound dimension) {
-        this.dimension = dimension;
-    }
+    //public void setDimension(NBTCompound dimension) {
+      //  this.dimension = dimension;
+    //}
 
     public String getWorldName() {
         return worldName;

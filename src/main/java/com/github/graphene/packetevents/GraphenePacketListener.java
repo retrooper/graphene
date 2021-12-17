@@ -1,8 +1,8 @@
 package com.github.graphene.packetevents;
 
 import com.github.graphene.Graphene;
-import com.github.graphene.handler.PacketDecryption;
-import com.github.graphene.handler.PacketEncryption;
+import com.github.graphene.handler.PacketDecryptionHandler;
+import com.github.graphene.handler.PacketEncryptionHandler;
 import com.github.graphene.user.User;
 import com.github.graphene.util.UUIDUtil;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
@@ -38,6 +38,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
@@ -183,14 +184,14 @@ public class GraphenePacketListener implements PacketListener {
 
                                 SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
 
-                                Cipher decryptCipher = Cipher.getInstance("AES_128/CFB/NoPadding");
+                                Cipher decryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
                                 decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
 
-                                pipeline.addBefore("packet_splitter", "decryption_handler", new PacketDecryption(decryptCipher));
+                                pipeline.addBefore("packet_splitter", "decryption_handler", new PacketDecryptionHandler(decryptCipher));
 
-                                Cipher encryptCipher = Cipher.getInstance("AES_128/CFB/NoPadding");
+                                Cipher encryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
                                 encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
-                                pipeline.addBefore("packet_prepender", "encryption_handler", new PacketEncryption(encryptCipher));
+                                pipeline.addBefore("packet_prepender", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
                                 sendPostLoginPackets(event);
                             } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
                                     | InvalidKeyException | InvalidAlgorithmParameterException ex) {
@@ -225,67 +226,36 @@ public class GraphenePacketListener implements PacketListener {
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
         Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
 
+        byte[] dimensionBytes = new byte[0];
+        try (InputStream dimensionInfo = Graphene.class.getClassLoader().getResourceAsStream("RawDimensions.bytes")) {
+            dimensionBytes = new byte[dimensionInfo.available()];
+            dimensionInfo.read(dimensionBytes);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        byte[] dimensionCodec = new byte[0];
+        try (InputStream dimensionCodecInfo = Graphene.class.getClassLoader().getResourceAsStream("RawCodec.bytes")) {
+            dimensionCodec = new byte[dimensionCodecInfo.available()];
+            dimensionCodecInfo.read(dimensionCodec);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
         List<String> worldNames = new ArrayList<>();
-        worldNames.add("world");
-        worldNames.add("world2");
-        worldNames.add("world3");
+        worldNames.add("minecraft:overworld");
+        worldNames.add("minecraft:the_nether");
+        worldNames.add("minecraft:the_end");
+        long hashedSeed = 0L;
 
-        long hashedSeed = 100L;
-        NBTCompound dimension = new NBTCompound();
-        dimension.setTag("piglin_safe", new NBTByte((byte) 1));
-        dimension.setTag("natural", new NBTByte((byte) 1));
-        dimension.setTag("ambient_light", new NBTFloat(1.0f));
-        dimension.setTag("infiniburn", new NBTString(""));
-        dimension.setTag("respawn_anchor_works", new NBTByte((byte) 1));
-        dimension.setTag("has_skylight", new NBTByte((byte) 1));
-        dimension.setTag("bed_works", new NBTByte((byte) 1));
-        dimension.setTag("effects", new NBTString("minecraft:overworld"));
-        dimension.setTag("has_raids", new NBTByte((byte) 1));
-        dimension.setTag("min_y", new NBTInt(0));
-        dimension.setTag("height", new NBTInt(400));
-        dimension.setTag("logical_height", new NBTInt(256));
-        dimension.setTag("coordinate_scale", new NBTInt(1));
-        dimension.setTag("ultrawarm", new NBTByte((byte) 1));
-        dimension.setTag("has_ceiling", new NBTByte((byte) 1));
-        NBTCompound dimensionCodec = new NBTCompound();
-        NBTCompound dimensionType = new NBTCompound();
-        NBTList<NBTCompound> types = new NBTList<>(NBTType.COMPOUND);
-        NBTCompound type = new NBTCompound();
-        type.setTag("name", new NBTString("minecraft:overworld"));
-        type.setTag("id", new NBTInt(0));
-        type.setTag("element", dimension);
-        types.addTag(type);
-        dimensionType.setTag("type", new NBTString("minecraft:dimension_type"));
-        dimensionType.setTag("value", types);
-        dimensionCodec.setTag("minecraft:dimension_type", dimensionType);
-
-        NBTCompound biomeRegistry = new NBTCompound();
-        biomeRegistry.setTag("type", new NBTString("minecraft:worldgen/biome"));
-        NBTList<NBTCompound> biomes = new NBTList<>(NBTType.COMPOUND);
-        NBTCompound biomeRegEntry = new NBTCompound();
-        biomeRegEntry.setTag("name", new NBTString("minecraft:ocean"));
-        biomeRegEntry.setTag("id", new NBTInt(0));
-        NBTCompound oceanElement = new NBTCompound();
-        oceanElement.setTag("precipitation", new NBTString("none"));
-        oceanElement.setTag("depth", new NBTFloat(1.6f));
-        oceanElement.setTag("temperature", new NBTFloat(1.0f));
-        oceanElement.setTag("scale", new NBTFloat(1.0f));
-        oceanElement.setTag("downfall", new NBTFloat(0.6f));
-        oceanElement.setTag("category", new NBTString("ocean"));
-        NBTCompound oceanEffects = new NBTCompound();
-        oceanEffects.setTag("sky_color", new NBTInt(8364543));
-        oceanEffects.setTag("water_fog_color", new NBTInt(8364543));
-        oceanEffects.setTag("fog_color", new NBTInt(8364543));
-        oceanEffects.setTag("water_color", new NBTInt(4159204));
-        oceanElement.setTag("effects", oceanEffects);
-        biomeRegEntry.setTag("element", oceanElement);
-        biomes.addTag(biomeRegEntry);
-        biomeRegistry.setTag("value", biomes);
-        dimensionCodec.setTag("minecraft:worldgen/biome", biomeRegistry);
+        System.out.println("dc: " + dimensionCodec.length + ", dimensions: " + dimensionBytes.length);
 
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(user.getEntityId(),
                 false, user.getGameMode(), user.getPreviousGameMode(),
-                worldNames, dimensionCodec, dimension, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20,
+                worldNames, dimensionCodec, dimensionBytes, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20,
                 true, true, false, true);
 
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), joinGame);
@@ -296,13 +266,8 @@ public class GraphenePacketListener implements PacketListener {
 
         System.out.println("send held item change!");
 
-        int flags = 0x01;
-        flags |= 0x02;
-        flags |= 0x04;
-        flags |= 0x08;
-        flags |= 0x10;
-//        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(0, 0, 0, 0.0f, 0.0f, flags, 0);
-//        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
-//        System.out.println("send position and look!");
+        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(0, 6, 0, 0.0f, 0.0f, 0, 0, true);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
+        System.out.println("send position and look!");
     }
 }

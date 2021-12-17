@@ -3,15 +3,16 @@ package com.github.graphene.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
 import javax.crypto.Cipher;
 import java.util.List;
 
-public class PacketDecryption extends ByteToMessageDecoder {
+public class PacketDecryptionHandler extends MessageToMessageDecoder<ByteBuf> {
     private final Cipher cipher;
     private byte[] heap = new byte[0];
 
-    public PacketDecryption(Cipher cipher) {
+    public PacketDecryptionHandler(Cipher cipher) {
         this.cipher = cipher;
     }
 
