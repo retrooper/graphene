@@ -1,5 +1,7 @@
 package com.github.graphene.user;
 
+import com.github.graphene.util.entity.ClientSettings;
+import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.Color;
@@ -32,6 +34,8 @@ public class User {
     private long keepAliveTimer = System.currentTimeMillis();
     private long latency = 0L;
     private long sendKeepAliveTime = 0L;
+    private EntityInformation entityInformation;
+    private ClientSettings clientSettings;
 
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
@@ -174,6 +178,22 @@ public class User {
 
     public void setSendKeepAliveTime(long sendKeepAliveTime) {
         this.sendKeepAliveTime = sendKeepAliveTime;
+    }
+
+    public EntityInformation getEntityInformation() {
+        return entityInformation;
+    }
+
+    public void setEntityInformation(EntityInformation entityInformation) {
+        this.entityInformation = entityInformation;
+    }
+
+    public ClientSettings getClientSettings() {
+        return clientSettings;
+    }
+
+    public void setClientSettings(ClientSettings clientSettings) {
+        this.clientSettings = clientSettings;
     }
 
 }

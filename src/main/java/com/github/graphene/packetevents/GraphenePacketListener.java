@@ -6,6 +6,8 @@ import com.github.graphene.handler.PacketEncryptionHandler;
 import com.github.graphene.packetevents.manager.netty.ByteBufUtil;
 import com.github.graphene.user.User;
 import com.github.graphene.util.UUIDUtil;
+import com.github.graphene.util.entity.EntityInformation;
+import com.github.graphene.util.entity.Location;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.graphene.wrapper.play.server.WrapperStatusServerResponse;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -54,7 +56,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.*;
-import java.util.concurrent.ScheduledFuture;
 
 public class GraphenePacketListener implements PacketListener {
     @Override
@@ -146,7 +147,7 @@ public class GraphenePacketListener implements PacketListener {
 
                         if (Arrays.equals(user.getVerifyToken(), verifyToken)) {
                             try {
-                                String ip = user.getAddress().getHostName();
+//                                String ip = user.getAddress().getHostName();
                                 URL url = new URL("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + user.getUsername() + "&serverId=" + serverIdHash);
                                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                                 connection.setRequestProperty("Authorization", null);
@@ -265,6 +266,7 @@ public class GraphenePacketListener implements PacketListener {
         }
 
         sendMessage(TextComponent.builder().text("[" + user.getUsername() + "] ").color(Color.GOLD).append(TextComponent.builder().text("has left the server!").color(Color.WHITE).build()).build());
+        Graphene.USERS.remove(user);
     }
 
     public static void handleLogin(User user) {
@@ -326,11 +328,12 @@ public class GraphenePacketListener implements PacketListener {
         worldNames.add("minecraft:the_nether");
         worldNames.add("minecraft:the_end");
         long hashedSeed = 0L;
+        Location spawnPosition = new Location(0, 6, 0, 0, 0);
 
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(user.getEntityId(),
                 false, user.getGameMode(), user.getPreviousGameMode(),
                 worldNames, dimensionCodec, dimension, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20,
-                true, true, false, true);
+                false, true, false, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), joinGame);
 
         String brandName = "Graphene";
@@ -361,8 +364,10 @@ public class GraphenePacketListener implements PacketListener {
 
         // send chunks
 
-        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(0, 6, 0, 0.0f, 0.0f, 0, 0, true);
+        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnPosition.getX(), spawnPosition.getY(), spawnPosition.getZ(), spawnPosition.getYaw(), spawnPosition.getPitch(), 0, 0, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
         System.out.println("send position and look!");
+
+        user.setEntityInformation(new EntityInformation(spawnPosition));
     }
 }

@@ -58,7 +58,6 @@ public class PacketDecoder extends ByteToMessageDecoder {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         if (user.getState() == ConnectionState.PLAY) {
-            Graphene.USERS.remove(user);
             GraphenePacketListener.handleLeave(user);
         }
         super.channelInactive(ctx);

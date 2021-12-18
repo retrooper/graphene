@@ -5,15 +5,16 @@ import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
-import com.github.graphene.packetevents.GraphenePacketListener;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
-import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -22,7 +23,9 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Logger;
 
 public class Graphene {
@@ -36,10 +39,10 @@ public class Graphene {
     // Prefer 8 total worker threads over less.
     public static int TOTAL_THREADS = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
     public static final ThreadPoolExecutor WORKER_THREADS = (ThreadPoolExecutor) Executors.newFixedThreadPool(TOTAL_THREADS);
-
     public static final int PORT = 25565;
-
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
+    public static long totalTicks = 0L;
+    private static long lastTickTime = 0L;
 
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
@@ -71,6 +74,9 @@ public class Graphene {
             Graphene.LOGGER.info("Starting KeepAliveScheduler on worker threads...");
             WORKER_THREADS.execute(Graphene::runKeepAlives);
 
+            Graphene.LOGGER.info("Starting tick system...");
+            WORKER_THREADS.execute(Graphene::tick);
+
             Graphene.LOGGER.info("Minecraft server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors() * 2) + " worker threads)");
 
             // Bind and start to accept incoming connections.
@@ -85,6 +91,20 @@ public class Graphene {
             bossGroup.shutdownGracefully();
         }
         PacketEvents.getAPI().terminate();
+    }
+
+    public static void tick() {
+        long curTime = System.currentTimeMillis();
+        long elapsedTime = curTime - lastTickTime;
+
+        if (elapsedTime >= 50) {
+            totalTicks += 1;
+            lastTickTime = curTime;
+
+            if (elapsedTime != 50L) System.out.println(elapsedTime + "ms");
+        }
+
+        WORKER_THREADS.execute(Graphene::tick);
     }
 
     public static void runKeepAlives() {
