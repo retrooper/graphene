@@ -1,5 +1,6 @@
 package com.github.graphene.handler;
 
+import com.github.graphene.Graphene;
 import com.github.graphene.packetevents.GraphenePacketListener;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -57,6 +58,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         if (user.getState() == ConnectionState.PLAY) {
+            Graphene.USERS.remove(user);
             GraphenePacketListener.handleLeave(user);
         }
         super.channelInactive(ctx);

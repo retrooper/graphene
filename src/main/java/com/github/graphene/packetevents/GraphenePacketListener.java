@@ -30,7 +30,6 @@ import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClient
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerLoginSuccess;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientKeepAlive;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import com.github.retrooper.packetevents.wrapper.status.client.WrapperStatusClientPing;
@@ -127,91 +126,91 @@ public class GraphenePacketListener implements PacketListener {
 
                     // Authenticate and handle player connection on a separate
                     // ExecutorService pool of threads.
-                    //Graphene.WORKER_THREADS.execute(() -> {
-                    byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Graphene.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
-                    PrivateKey privateKey = Graphene.KEY_PAIR.getPrivate();
-                    byte[] sharedSecret = MinecraftEncryptionUtil.decrypt(privateKey.getAlgorithm(), privateKey, encryptionResponse.getEncryptedSharedSecret());
-                    MessageDigest digest;
-                    try {
-                        digest = MessageDigest.getInstance("SHA-1");
-                    } catch (NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                        user.forceDisconnect();
-                        return; // basically asserts that digest must be not null
-                    }
-
-                    digest.update(user.getServerId().getBytes(StandardCharsets.UTF_8));
-                    digest.update(sharedSecret);
-                    digest.update(Graphene.KEY_PAIR.getPublic().getEncoded());
-                    String serverIdHash = new BigInteger(digest.digest()).toString(16);
-
-                    if (Arrays.equals(user.getVerifyToken(), verifyToken)) {
+                    Graphene.WORKER_THREADS.execute(() -> {
+                        byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Graphene.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
+                        PrivateKey privateKey = Graphene.KEY_PAIR.getPrivate();
+                        byte[] sharedSecret = MinecraftEncryptionUtil.decrypt(privateKey.getAlgorithm(), privateKey, encryptionResponse.getEncryptedSharedSecret());
+                        MessageDigest digest;
                         try {
-                            String ip = user.getAddress().getHostName();
-                            URL url = new URL("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + user.getUsername() + "&serverId=" + serverIdHash);
-                            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                            connection.setRequestProperty("Authorization", null);
-                            connection.setRequestMethod("GET");
-                            Graphene.LOGGER.info("Authenticating " + user.getUsername() + "...");
-                            if (connection.getResponseCode() == 204) {
-                                Graphene.LOGGER.info("Failed to authenticate " + user.getUsername() + "!");
-                                user.kickLogin("Failed to authenticate your connection.");
-                                return;
-                            }
-                            BufferedReader in = new BufferedReader(
-                                    new InputStreamReader(connection.getInputStream()));
-                            String inputLine;
-                            // We know the output from here MUST be a string (assuming
-                            // - they don't change their API) so we can use StringBuilder not buffer.
-                            StringBuilder sb = new StringBuilder();
-                            while ((inputLine = in.readLine()) != null) {
-                                sb.append(inputLine);
-                            }
-                            in.close();
-                            JsonObject jsonObject = ComponentSerializer.GSON.fromJson(sb.toString(), JsonObject.class);
-
-                            String username = jsonObject.get("name").getAsString();
-                            String rawUUID = jsonObject.get("id").getAsString();
-                            UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
-                            JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
-
-                            GameProfile profile = user.getGameProfile();
-                            for (JsonElement element : textureProperties) {
-                                JsonObject property = element.getAsJsonObject();
-
-                                String name = property.get("name").getAsString();
-                                String value = property.get("value").getAsString();
-                                String signature = property.get("signature").getAsString();
-
-                                profile.getTextureProperties().add(new TextureProperty(name, value, signature));
-                            }
-                            user.setGameProfile(profile);
-
-                            user.setUUID(uuid);
-                            user.setUsername(username);
-
-                            ChannelPipeline pipeline = user.getChannel().pipeline();
-
-                            SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
-
-                            Cipher decryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
-                            decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
-
-                            pipeline.addBefore("packet_splitter", "decryption_handler", new PacketDecryptionHandler(decryptCipher));
-
-                            Cipher encryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
-                            encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
-                            pipeline.addBefore("packet_prepender", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
-                            sendPostLoginPackets(event);
-                        } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
-                                | InvalidKeyException | InvalidAlgorithmParameterException ex) {
-                            ex.printStackTrace();
+                            digest = MessageDigest.getInstance("SHA-1");
+                        } catch (NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                            user.forceDisconnect();
+                            return; // basically asserts that digest must be not null
                         }
-                    } else {
-                        Graphene.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
-                        user.forceDisconnect();
-                    }
-                    //});
+
+                        digest.update(user.getServerId().getBytes(StandardCharsets.UTF_8));
+                        digest.update(sharedSecret);
+                        digest.update(Graphene.KEY_PAIR.getPublic().getEncoded());
+                        String serverIdHash = new BigInteger(digest.digest()).toString(16);
+
+                        if (Arrays.equals(user.getVerifyToken(), verifyToken)) {
+                            try {
+                                String ip = user.getAddress().getHostName();
+                                URL url = new URL("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + user.getUsername() + "&serverId=" + serverIdHash);
+                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                connection.setRequestProperty("Authorization", null);
+                                connection.setRequestMethod("GET");
+                                Graphene.LOGGER.info("Authenticating " + user.getUsername() + "...");
+                                if (connection.getResponseCode() == 204) {
+                                    Graphene.LOGGER.info("Failed to authenticate " + user.getUsername() + "!");
+                                    user.kickLogin("Failed to authenticate your connection.");
+                                    return;
+                                }
+                                BufferedReader in = new BufferedReader(
+                                        new InputStreamReader(connection.getInputStream()));
+                                String inputLine;
+                                // We know the output from here MUST be a string (assuming
+                                // - they don't change their API) so we can use StringBuilder not buffer.
+                                StringBuilder sb = new StringBuilder();
+                                while ((inputLine = in.readLine()) != null) {
+                                    sb.append(inputLine);
+                                }
+                                in.close();
+                                JsonObject jsonObject = ComponentSerializer.GSON.fromJson(sb.toString(), JsonObject.class);
+
+                                String username = jsonObject.get("name").getAsString();
+                                String rawUUID = jsonObject.get("id").getAsString();
+                                UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
+                                JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
+
+                                GameProfile profile = user.getGameProfile();
+                                for (JsonElement element : textureProperties) {
+                                    JsonObject property = element.getAsJsonObject();
+
+                                    String name = property.get("name").getAsString();
+                                    String value = property.get("value").getAsString();
+                                    String signature = property.get("signature").getAsString();
+
+                                    profile.getTextureProperties().add(new TextureProperty(name, value, signature));
+                                }
+                                user.setGameProfile(profile);
+
+                                user.setUUID(uuid);
+                                user.setUsername(username);
+
+                                ChannelPipeline pipeline = user.getChannel().pipeline();
+
+                                SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
+
+                                Cipher decryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
+                                decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
+
+                                pipeline.addBefore("packet_splitter", "decryption_handler", new PacketDecryptionHandler(decryptCipher));
+
+                                Cipher encryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
+                                encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
+                                pipeline.addBefore("packet_prepender", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
+                                sendPostLoginPackets(event);
+                            } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
+                                    | InvalidKeyException | InvalidAlgorithmParameterException ex) {
+                                ex.printStackTrace();
+                            }
+                        } else {
+                            Graphene.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
+                            user.forceDisconnect();
+                        }
+                    });
                 }
 
                 break;
@@ -226,13 +225,13 @@ public class GraphenePacketListener implements PacketListener {
                     BaseComponent component = TextComponent.builder().text("[" + user.getUsername() + "] ").color(Color.GOLD)
                             .append(TextComponent.builder().text(msg).color(Color.WHITE).build()).build();
                     sendMessage(component);
-                }
-                else if (event.getPacketType() == PacketType.Play.Client.KEEP_ALIVE) {
-                    WrapperPlayClientKeepAlive ka = new WrapperPlayClientKeepAlive(event);
-                    if (user.getExpectedKeepAliveId() != ka.getId()) {
-                        user.kick("Invalid keep alive id!");
+                } else if (event.getPacketType() == PacketType.Play.Client.KEEP_ALIVE) {
+                    if (user.getSendKeepAliveTime() != 0L) {
+                        user.setLatency(System.currentTimeMillis() - user.getSendKeepAliveTime());
+                        user.setLastKeepAliveTime(System.currentTimeMillis());
                     }
                 }
+
                 break;
         }
 
@@ -263,12 +262,13 @@ public class GraphenePacketListener implements PacketListener {
             WrapperPlayServerPlayerInfo outPlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, user.getUUID(), dataList);
             ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(player.getChannel());
             PacketEvents.getAPI().getPlayerManager().sendPacket(ch, outPlayerInfo);
-
         }
+
         sendMessage(TextComponent.builder().text("[" + user.getUsername() + "] ").color(Color.GOLD).append(TextComponent.builder().text("has left the server!").color(Color.WHITE).build()).build());
     }
 
     public static void handleLogin(User user) {
+        // use translations!
         sendMessage(TextComponent.builder().text("[" + user.getUsername() + "] ").color(Color.GOLD).append(TextComponent.builder().text("has joined the server!").color(Color.WHITE).build()).build());
 
         for (User player : Graphene.USERS) {
@@ -305,7 +305,6 @@ public class GraphenePacketListener implements PacketListener {
             e.printStackTrace();
         }
 
-
         byte[] dimensionCodecBytes = new byte[0];
         try (InputStream dimensionCodecInfo = Graphene.class.getClassLoader().getResourceAsStream("RawCodec.bytes")) {
             dimensionCodecBytes = new byte[dimensionCodecInfo.available()];
@@ -340,7 +339,6 @@ public class GraphenePacketListener implements PacketListener {
         brandNameBuffer.writeByteArray(brandName.getBytes());
         byte[] brandNameBytes = new byte[brandNameBuffer.buffer.readableBytes()];
         brandNameBuffer.buffer.readBytes(brandNameBytes);
-
 
         WrapperPlayServerPluginMessage pluginMessage = new WrapperPlayServerPluginMessage("minecraft:brand", brandNameBytes);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), pluginMessage);

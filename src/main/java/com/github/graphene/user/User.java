@@ -28,7 +28,10 @@ public class User {
     private byte[] verifyToken;
     private String serverAddress;
     private GameProfile gameProfile;
-    private long expectedKeepAliveId = 0L;
+    private long lastKeepAliveTime = Long.MAX_VALUE;
+    private long keepAliveTimer = System.currentTimeMillis();
+    private long latency = 0L;
+    private long sendKeepAliveTime = 0L;
 
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
@@ -131,23 +134,46 @@ public class User {
         channel.close();
     }
 
-
     public void kickLogin(String reason) {
         WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build().toString());
-        PacketEvents.getAPI().getPlayerManager().sendPacket(getChannel(), disconnect);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
     }
 
     public void kick(String reason) {
         WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build());
-        PacketEvents.getAPI().getPlayerManager().sendPacket(getChannel(), disconnect);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
     }
 
-    public void setExpectedKeepAliveId(long expectedKeepAliveId) {
-        this.expectedKeepAliveId = expectedKeepAliveId;
+    public long getLastKeepAliveTime() {
+        return lastKeepAliveTime;
     }
 
-    public long getExpectedKeepAliveId() {
-        return expectedKeepAliveId;
+    public void setLastKeepAliveTime(long lastKeepAliveTime) {
+        this.lastKeepAliveTime = lastKeepAliveTime;
+    }
+
+    public long getKeepAliveTimer() {
+        return keepAliveTimer;
+    }
+
+    public void setKeepAliveTimer(long keepAliveTimer) {
+        this.keepAliveTimer = keepAliveTimer;
+    }
+
+    public long getLatency() {
+        return latency;
+    }
+
+    public void setLatency(long latency) {
+        this.latency = latency;
+    }
+
+    public long getSendKeepAliveTime() {
+        return sendKeepAliveTime;
+    }
+
+    public void setSendKeepAliveTime(long sendKeepAliveTime) {
+        this.sendKeepAliveTime = sendKeepAliveTime;
     }
 
 }

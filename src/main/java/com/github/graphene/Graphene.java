@@ -13,10 +13,7 @@ import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -36,28 +33,13 @@ public class Graphene {
     public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
-    // ExecutorService used instead of creating threads normally because it queues
-    // up tasks in case of the server being botted - saving expensive resources.
-    // Since most modern CPUs allow for 2 threads/core, we can roughly estimate
-    // the amount of total WorkerThreads we can allocate for the server.
-    public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+    // Prefer 8 total worker threads over less.
+    public static int TOTAL_THREADS = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
+    public static final ThreadPoolExecutor WORKER_THREADS = (ThreadPoolExecutor) Executors.newFixedThreadPool(TOTAL_THREADS);
 
     public static final int PORT = 25565;
 
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
-
-    public static final ScheduledFuture<?> KEEP_ALIVE_SCHEDULER = Executors.newScheduledThreadPool(3).scheduleAtFixedRate(() -> {
-        for (User user : USERS) {
-            //TODO Change to server keep alive
-            long id = (long) (Math.random() * 1000L);
-            user.setExpectedKeepAliveId(id);
-            WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive(id);
-            ChannelAbstract channel = PacketEvents.getAPI().getNettyManager().wrapChannel(user.getChannel());
-            PacketEvents.getAPI().getPlayerManager().sendPacket(channel, keepAlive);
-            System.out.println("sent keep alive to " + user.getUsername());
-        }
-    },0L, 20L, TimeUnit.SECONDS);
-
 
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
@@ -83,10 +65,13 @@ public class Graphene {
                                     .addLast(PacketEvents.ENCODER_NAME, encoder);
                         }
                     })
-                    .option(ChannelOption.SO_BACKLOG, 128)          // (5)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true); // (6)
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            Graphene.LOGGER.info("Starting Minecraft server on *:" + PORT);
+            Graphene.LOGGER.info("Starting KeepAliveScheduler on worker threads...");
+            WORKER_THREADS.execute(Graphene::runKeepAlives);
+
+            Graphene.LOGGER.info("Minecraft server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors() * 2) + " worker threads)");
 
             // Bind and start to accept incoming connections.
             ChannelFuture f = b.bind(PORT).sync();
@@ -100,6 +85,28 @@ public class Graphene {
             bossGroup.shutdownGracefully();
         }
         PacketEvents.getAPI().terminate();
+    }
+
+    public static void runKeepAlives() {
+        for (User user : USERS) {
+            if ((System.currentTimeMillis() - user.getKeepAliveTimer()) > 2000L) {
+                long elapsedTime = System.currentTimeMillis() - user.getLastKeepAliveTime();
+
+                if (elapsedTime > 30000L) {
+                    user.kick("Timed out.");
+                    Graphene.LOGGER.info(user.getUsername() + " was kicked for not responding to keep alives!");
+                    break;
+                }
+
+                WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive((long) Math.floor(Math.random() * 2147483647));
+                PacketEvents.getAPI().getPlayerManager().sendPacket(user, keepAlive);
+
+                user.setKeepAliveTimer(System.currentTimeMillis());
+                user.setSendKeepAliveTime(System.currentTimeMillis());
+            }
+        }
+
+        WORKER_THREADS.execute(Graphene::runKeepAlives);
     }
 
     public static KeyPair generateKeyPair() {
