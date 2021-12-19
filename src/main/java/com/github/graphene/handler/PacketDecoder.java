@@ -1,6 +1,5 @@
 package com.github.graphene.handler;
 
-import com.github.graphene.Graphene;
 import com.github.graphene.packetevents.GraphenePacketListener;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -27,9 +26,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
             int firstReaderIndex = transformedBuf.readerIndex();
             PacketReceiveEvent packetReceiveEvent = new PacketReceiveEvent(user.getState(), ctx.channel(), user, transformedBuf);
             int readerIndex = transformedBuf.readerIndex();
-            PacketEvents.getAPI().getEventManager().callEvent(packetReceiveEvent, () -> {
-                transformedBuf.readerIndex(readerIndex);
-            });
+            PacketEvents.getAPI().getEventManager().callEvent(packetReceiveEvent, () -> transformedBuf.readerIndex(readerIndex));
             if (!packetReceiveEvent.isCancelled()) {
                 if (packetReceiveEvent.getLastUsedWrapper() != null) {
                     packetReceiveEvent.getByteBuf().clear();

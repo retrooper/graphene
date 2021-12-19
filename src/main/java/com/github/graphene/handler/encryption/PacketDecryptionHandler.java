@@ -1,8 +1,7 @@
-package com.github.graphene.handler;
+package com.github.graphene.handler.encryption;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import javax.crypto.Cipher;

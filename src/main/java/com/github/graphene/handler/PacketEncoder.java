@@ -9,12 +9,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+@SuppressWarnings("RedundantThrows")
 public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
     public final User user;
 
     public PacketEncoder(User user) {
         this.user = user;
-        //the packet decryptor is excellent
     }
 
     public void handle(ChannelHandlerContextAbstract ctx, ByteBufAbstract transformedBuf, ByteBuf output) {
@@ -22,9 +22,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
             int firstReaderIndex = transformedBuf.readerIndex();
             PacketSendEvent packetSendEvent = new PacketSendEvent(ctx.channel(), user, transformedBuf);
             int readerIndex = transformedBuf.readerIndex();
-            PacketEvents.getAPI().getEventManager().callEvent(packetSendEvent, () -> {
-                transformedBuf.readerIndex(readerIndex);
-            });
+            PacketEvents.getAPI().getEventManager().callEvent(packetSendEvent, () -> transformedBuf.readerIndex(readerIndex));
             if (!packetSendEvent.isCancelled()) {
                 if (packetSendEvent.getLastUsedWrapper() != null) {
                     packetSendEvent.getByteBuf().clear();
@@ -34,9 +32,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
                 transformedBuf.readerIndex(firstReaderIndex);
                 output.writeBytes((ByteBuf) transformedBuf.retain().rawByteBuf());
                 if (packetSendEvent.getPostTask() != null) {
-                    ((ChannelHandlerContext) ctx.rawChannelHandlerContext()).newPromise().addListener(f -> {
-                        packetSendEvent.getPostTask().run();
-                    });
+                    ((ChannelHandlerContext) ctx.rawChannelHandlerContext()).newPromise().addListener(f -> packetSendEvent.getPostTask().run());
                 }
             }
         } finally {

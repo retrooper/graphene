@@ -12,7 +12,8 @@ import org.jetbrains.annotations.NotNull;
 public class PlayerManagerImpl implements PlayerManager {
     @Override
     public int getPing(@NotNull Object player) {
-        return -1;
+        User user = (User) player;
+        return (int)user.getLatency();
     }
 
     //TODO See if we can still put it in the map

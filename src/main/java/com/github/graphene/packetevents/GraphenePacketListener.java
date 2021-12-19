@@ -1,13 +1,15 @@
 package com.github.graphene.packetevents;
 
 import com.github.graphene.Graphene;
-import com.github.graphene.handler.PacketDecryptionHandler;
-import com.github.graphene.handler.PacketEncryptionHandler;
+import com.github.graphene.handler.encryption.PacketDecryptionHandler;
+import com.github.graphene.handler.encryption.PacketEncryptionHandler;
+import com.github.graphene.logic.EntityHandler;
 import com.github.graphene.packetevents.manager.netty.ByteBufUtil;
 import com.github.graphene.user.User;
 import com.github.graphene.util.UUIDUtil;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.util.entity.Location;
+import com.github.graphene.util.entity.UpdateType;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.graphene.wrapper.play.server.WrapperStatusServerResponse;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -175,6 +177,12 @@ public class GraphenePacketListener implements PacketListener {
                                 UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
                                 JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
 
+                                for (User lUser : Graphene.USERS) {
+                                    if (lUser.getUsername().equals(username)) {
+                                        lUser.kick("You logged in from another location!");
+                                    }
+                                }
+
                                 GameProfile profile = user.getGameProfile();
                                 for (JsonElement element : textureProperties) {
                                     JsonObject property = element.getAsJsonObject();
@@ -229,6 +237,7 @@ public class GraphenePacketListener implements PacketListener {
                 } else if (event.getPacketType() == PacketType.Play.Client.KEEP_ALIVE) {
                     if (user.getSendKeepAliveTime() != 0L) {
                         user.setLatency(System.currentTimeMillis() - user.getSendKeepAliveTime());
+                    user.getEntityInformation().addUpdateTotal(UpdateType.LATENCY);
                         user.setLastKeepAliveTime(System.currentTimeMillis());
                     }
                 }
@@ -297,6 +306,8 @@ public class GraphenePacketListener implements PacketListener {
         WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
         user.setState(ConnectionState.PLAY);
+        Location spawnPosition = new Location(0, 6, 0, 0, 0);
+        user.setEntityInformation(new EntityInformation(spawnPosition));
         Graphene.USERS.add(user);
         Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
         byte[] dimensionBytes = new byte[0];
@@ -328,7 +339,6 @@ public class GraphenePacketListener implements PacketListener {
         worldNames.add("minecraft:the_nether");
         worldNames.add("minecraft:the_end");
         long hashedSeed = 0L;
-        Location spawnPosition = new Location(0, 6, 0, 0, 0);
 
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(user.getEntityId(),
                 false, user.getGameMode(), user.getPreviousGameMode(),
@@ -366,8 +376,8 @@ public class GraphenePacketListener implements PacketListener {
 
         WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnPosition.getX(), spawnPosition.getY(), spawnPosition.getZ(), spawnPosition.getYaw(), spawnPosition.getPitch(), 0, 0, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
-        System.out.println("send position and look!");
 
-        user.setEntityInformation(new EntityInformation(spawnPosition));
+        EntityHandler.onLogin(user);
     }
+
 }

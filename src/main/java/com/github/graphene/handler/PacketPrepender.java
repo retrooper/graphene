@@ -22,6 +22,7 @@ public class PacketPrepender extends MessageToByteEncoder<ByteBuf> {
         buffer.writeByte(value);
     }
 
+    @SuppressWarnings("RedundantThrows")
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
         //Prefix the packet with its length

@@ -1,5 +1,6 @@
 package com.github.graphene.packetevents;
 
+import com.github.graphene.logic.EntityHandler;
 import com.github.graphene.packetevents.injector.ChannelInjectorImpl;
 import com.github.graphene.packetevents.manager.netty.NettyManagerImpl;
 import com.github.graphene.packetevents.manager.player.PlayerManagerImpl;
@@ -85,6 +86,7 @@ public class GraphenePacketEventsBuilder {
                     //Register internal packet listener (should be the first listener)
                     getEventManager().registerListener(new InternalPacketListener(), PacketListenerPriority.LOWEST);
                     getEventManager().registerListener(new GraphenePacketListener(), PacketListenerPriority.LOWEST);
+                    getEventManager().registerListener(new EntityHandler(), PacketListenerPriority.LOWEST);
                 }
             }
 

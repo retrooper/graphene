@@ -4,6 +4,7 @@ import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
+import com.github.graphene.logic.EntityHandler;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -18,7 +19,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.internal.ReflectionUtil;
+import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -29,6 +33,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Logger;
 
 public class Graphene {
+    public static volatile boolean shouldTick = true;
     public static final String SERVER_VERSION_NAME = ServerVersion.getLatest().getReleaseName();
     public static final int SERVER_PROTOCOL_VERSION = ServerVersion.getLatest().getProtocolVersion();
     public static final int MAX_PLAYERS = 100;
@@ -36,9 +41,9 @@ public class Graphene {
     public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
-    // Prefer 8 total worker threads over less.
-    public static int TOTAL_THREADS = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
+    public static int TOTAL_THREADS = (Runtime.getRuntime().availableProcessors() * 2) - 1;
     public static final ThreadPoolExecutor WORKER_THREADS = (ThreadPoolExecutor) Executors.newFixedThreadPool(TOTAL_THREADS);
+    public static final ThreadPoolExecutor DEDICATED_TICK_THREAD = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
     public static final int PORT = 25565;
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
@@ -46,6 +51,7 @@ public class Graphene {
 
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
+        assert KEY_PAIR != null;
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().init();
@@ -56,8 +62,9 @@ public class Graphene {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @SuppressWarnings("RedundantThrows")
                         @Override
-                        public void initChannel(SocketChannel channel) throws Exception {
+                        public void initChannel(@NotNull SocketChannel channel) throws Exception {
                             User user = new User(channel, ConnectionState.HANDSHAKING);
                             PacketDecoder decoder = new PacketDecoder(user);
                             PacketEncoder encoder = new PacketEncoder(user);
@@ -75,7 +82,7 @@ public class Graphene {
             WORKER_THREADS.execute(Graphene::runKeepAlives);
 
             Graphene.LOGGER.info("Starting tick system...");
-            WORKER_THREADS.execute(Graphene::tick);
+            DEDICATED_TICK_THREAD.execute(Graphene::tick);
 
             Graphene.LOGGER.info("Minecraft server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors() * 2) + " worker threads)");
 
@@ -94,22 +101,22 @@ public class Graphene {
     }
 
     public static void tick() {
-        long curTime = System.currentTimeMillis();
-        long elapsedTime = curTime - lastTickTime;
+        while (shouldTick) {
+            long curTime = System.currentTimeMillis();
+            long elapsedTime = curTime - lastTickTime;
 
-        if (elapsedTime >= 50) {
-            totalTicks += 1;
-            lastTickTime = curTime;
+            if (elapsedTime >= 50L) {
+                totalTicks += 1;
+                lastTickTime = curTime;
 
-            if (elapsedTime != 50L) System.out.println(elapsedTime + "ms");
+                EntityHandler.onTick();
+            }
         }
-
-        WORKER_THREADS.execute(Graphene::tick);
     }
 
     public static void runKeepAlives() {
         for (User user : USERS) {
-            if ((System.currentTimeMillis() - user.getKeepAliveTimer()) > 2000L) {
+            if ((System.currentTimeMillis() - user.getKeepAliveTimer()) > 3000L) {
                 long elapsedTime = System.currentTimeMillis() - user.getLastKeepAliveTime();
 
                 if (elapsedTime > 30000L) {
@@ -136,6 +143,11 @@ public class Graphene {
             return keyPairGenerator.generateKeyPair();
         } catch (NoSuchAlgorithmException ex) {
             ex.printStackTrace();
+            // If an error is thrown then shutdown because we
+            // literally can't start the server without it, also
+            // stops IntelliJ from asking to assert not null on keys.
+            System.out.println("Failed to generate RSA-1024 key, cannot start server!");
+            System.exit(2);
             return null;
         }
     }

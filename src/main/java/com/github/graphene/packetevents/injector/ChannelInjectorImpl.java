@@ -6,7 +6,6 @@ import com.github.retrooper.packetevents.injector.ChannelInjector;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import org.jetbrains.annotations.Nullable;
 
 public class ChannelInjectorImpl implements ChannelInjector {

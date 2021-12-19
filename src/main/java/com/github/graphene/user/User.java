@@ -9,7 +9,9 @@ import com.github.retrooper.packetevents.protocol.chat.component.impl.TextCompon
 import com.github.retrooper.packetevents.protocol.gameprofile.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import io.netty.channel.Channel;
 
@@ -40,6 +42,7 @@ public class User {
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
         this.state = state;
+        this.clientSettings = new ClientSettings("", 0, (byte) 0, WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
     }
 
     public GameProfile getGameProfile() {
