@@ -144,11 +144,13 @@ public class User {
     public void kickLogin(String reason) {
         WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build().toString());
         PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
+        forceDisconnect();
     }
 
     public void kick(String reason) {
         WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build());
         PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
+        forceDisconnect();
     }
 
     public long getLastKeepAliveTime() {

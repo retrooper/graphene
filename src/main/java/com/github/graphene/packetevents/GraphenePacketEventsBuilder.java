@@ -69,7 +69,6 @@ public class GraphenePacketEventsBuilder {
             private final LogManager logManager = new LogManager();
             private boolean loaded;
             private boolean initialized;
-            private boolean lateBind = false;
 
             @Override
             public void load() {
