@@ -93,22 +93,19 @@ public class EntityHandler implements PacketListener {
             }
         }
     }
-
+    
+    //TODO Analyse the way we tick
     public static void onTick() {
         for (User user : Graphene.USERS) {
             EntityInformation entityInformation = user.getEntityInformation();
             if (!entityInformation.getTotalUpdates().isEmpty()) {
-                List<UpdateType> totalUpdates = entityInformation.getTotalUpdates();
+                Queue<UpdateType> totalUpdates = entityInformation.getTotalUpdates();
                 Location position = entityInformation.getPosition();
                 Location lastPosition = entityInformation.getLastPosition();
                 Location angle = entityInformation.getAngle();
                 List<PacketWrapper<?>> packetQueue = new ArrayList<>();
 
-                Iterator<UpdateType> it = totalUpdates.iterator();
-
-                while (it.hasNext()) {
-                    UpdateType updateType = it.next();
-
+                for (UpdateType updateType : totalUpdates) {
                     switch (updateType) {
                         case POSITION:
                             if (shouldSendEntityTeleport(position, lastPosition)) {
@@ -142,7 +139,7 @@ public class EntityHandler implements PacketListener {
 
                             break;
                         case METADATA:
-                            packetQueue.add(getEntityMetadata(user));
+                            // packetQueue.add(getEntityMetadata(user));
 
                             break;
                         case LATENCY:
@@ -233,7 +230,7 @@ public class EntityHandler implements PacketListener {
         ClientSettings clientSettings = user.getClientSettings();
 
         information.add(new EntityData(17, EntityDataTypes.BYTE, clientSettings.getDisplayedSkinParts()));
-        information.add(new EntityData(18, EntityDataTypes.BYTE, clientSettings.getMainHand().getId()));
+        information.add(new EntityData(18, EntityDataTypes.BYTE, (byte)clientSettings.getMainHand().getId()));
 
         byte flagBitmask = 0;
 

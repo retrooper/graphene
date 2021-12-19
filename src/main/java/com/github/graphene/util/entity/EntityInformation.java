@@ -1,8 +1,8 @@
 package com.github.graphene.util.entity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class EntityInformation {
 
@@ -13,7 +13,7 @@ public class EntityInformation {
     private float yaw;
     private float pitch;
     private boolean onGround;
-    private final List<UpdateType> totalUpdates;
+    private final Queue<UpdateType> totalUpdates;
     private double lastX;
     private double lastY;
     private double lastZ;
@@ -53,7 +53,7 @@ public class EntityInformation {
         sprinting = false;
 
         groundUpdate = true;
-        totalUpdates = new ArrayList<>();
+        totalUpdates = new ConcurrentLinkedQueue<>();
     }
 
     public void setPosition(double x, double y, double z) {
@@ -106,10 +106,11 @@ public class EntityInformation {
     public void addUpdateTotal(UpdateType updateType) {
         if (!totalUpdates.contains(updateType)) totalUpdates.add(updateType);
 
-        if (totalUpdates.contains(UpdateType.POSITION_ANGLE)) totalUpdates.removeIf(type -> type == UpdateType.ANGLE || type == UpdateType.POSITION);
+        if (totalUpdates.contains(UpdateType.POSITION_ANGLE))
+            totalUpdates.removeIf(type -> type == UpdateType.ANGLE || type == UpdateType.POSITION);
     }
 
-    public List<UpdateType> getTotalUpdates() {
+    public Queue<UpdateType> getTotalUpdates() {
         return totalUpdates;
     }
 
