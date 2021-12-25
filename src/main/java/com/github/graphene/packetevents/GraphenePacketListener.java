@@ -27,6 +27,11 @@ import com.github.retrooper.packetevents.protocol.gameprofile.TextureProperty;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.world.Difficulty;
+import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
+import com.github.retrooper.packetevents.protocol.world.chunk.Column;
+import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
+import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
+import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
@@ -372,7 +377,14 @@ public class GraphenePacketListener implements PacketListener {
 
         // send current player information
 
-        // send chunks
+        // TODO work on sending chunks
+        BaseChunk[] chunks = new BaseChunk[16];
+        for (int i = 0; i < chunks.length; i++) {
+            chunks[i] = new Chunk_v1_18(16, DataPalette.createForChunk(), DataPalette.createForBiome());
+        }
+        Column column = new Column(0, 0, true, chunks, new TileEntity[0], new NBTCompound(), new int[0]);
+        WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column);
+        //PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), chunkData);
 
         WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnPosition.getX(), spawnPosition.getY(), spawnPosition.getZ(), spawnPosition.getYaw(), spawnPosition.getPitch(), 0, 0, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
