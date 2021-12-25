@@ -179,7 +179,7 @@ public class GraphenePacketListener implements PacketListener {
 
                                 for (User lUser : Graphene.USERS) {
                                     if (lUser.getUsername().equals(username)) {
-                                        lUser.kick("You logged in from another location!");
+                                        lUser.kickLogin("You logged in from another location!");
                                     }
                                 }
 
