@@ -32,6 +32,7 @@ import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
 import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
 import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
+import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
@@ -378,11 +379,12 @@ public class GraphenePacketListener implements PacketListener {
         // send current player information
 
         // TODO work on sending chunks
-        BaseChunk[] chunks = new BaseChunk[16];
+        Chunk_v1_18[] chunks = new Chunk_v1_18[16];
         for (int i = 0; i < chunks.length; i++) {
             chunks[i] = new Chunk_v1_18(16, DataPalette.createForChunk(), DataPalette.createForBiome());
+            chunks[i].set(0, 0, 0, WrappedBlockState.getByString("grass").getGlobalId());
         }
-        Column column = new Column(0, 0, true, chunks, new TileEntity[0], new NBTCompound(), new int[0]);
+        Column column = new Column(0, 0, true, chunks, new TileEntity[0], new NBTCompound());
         WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column);
         //PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), chunkData);
 
