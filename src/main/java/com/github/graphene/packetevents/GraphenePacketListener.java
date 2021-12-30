@@ -10,6 +10,7 @@ import com.github.graphene.util.UUIDUtil;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.util.entity.Location;
 import com.github.graphene.util.entity.UpdateType;
+import com.github.graphene.wrapper.play.server.WrapperPlayServerChunkData_1_18;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.graphene.wrapper.play.server.WrapperStatusServerResponse;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -20,14 +21,19 @@ import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.Color;
 import com.github.retrooper.packetevents.protocol.chat.component.BaseComponent;
+import com.github.retrooper.packetevents.protocol.chat.component.ClickEvent;
 import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
+import com.github.retrooper.packetevents.protocol.chat.component.impl.TranslatableComponent;
 import com.github.retrooper.packetevents.protocol.chat.component.serializer.ComponentSerializer;
 import com.github.retrooper.packetevents.protocol.gameprofile.GameProfile;
 import com.github.retrooper.packetevents.protocol.gameprofile.TextureProperty;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
+import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.world.Difficulty;
-import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
 import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
@@ -243,7 +249,7 @@ public class GraphenePacketListener implements PacketListener {
                 } else if (event.getPacketType() == PacketType.Play.Client.KEEP_ALIVE) {
                     if (user.getSendKeepAliveTime() != 0L) {
                         user.setLatency(System.currentTimeMillis() - user.getSendKeepAliveTime());
-                    user.getEntityInformation().addUpdateTotal(UpdateType.LATENCY);
+                        user.getEntityInformation().addUpdateTotal(UpdateType.LATENCY);
                         user.setLastKeepAliveTime(System.currentTimeMillis());
                     }
                 }
@@ -286,7 +292,16 @@ public class GraphenePacketListener implements PacketListener {
 
     public static void handleLogin(User user) {
         // use translations!
-        sendMessage(TextComponent.builder().text("[" + user.getUsername() + "] ").color(Color.GOLD).append(TextComponent.builder().text("has joined the server!").color(Color.WHITE).build()).build());
+        ClickEvent clickEvent = new ClickEvent(ClickEvent.ClickType.SUGGEST_COMMAND, "/tell " + user.getUsername() + " Welcome!");
+        TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).clickEvent(clickEvent).build();
+        TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.joined")
+                .appendWith(withComponent).build();
+
+        for (User online : Graphene.USERS) {
+            WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent, WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+            ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(online.getChannel());
+            PacketEvents.getAPI().getPlayerManager().sendPacket(ch, loginMessage);
+        }
 
         for (User player : Graphene.USERS) {
             List<WrapperPlayServerPlayerInfo.PlayerData> playerDataList = new ArrayList<>();
@@ -348,8 +363,7 @@ public class GraphenePacketListener implements PacketListener {
 
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(user.getEntityId(),
                 false, user.getGameMode(), user.getPreviousGameMode(),
-                worldNames, dimensionCodec, dimension, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20,
-                false, true, false, true);
+                worldNames, dimensionCodec, dimension, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 10, 20, 20, false, true, false, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), joinGame);
 
         String brandName = "Graphene";
@@ -379,17 +393,31 @@ public class GraphenePacketListener implements PacketListener {
         // send current player information
 
         // TODO work on sending chunks
-        Chunk_v1_18[] chunks = new Chunk_v1_18[16];
+        Chunk_v1_18[] chunks = new Chunk_v1_18[1];
         for (int i = 0; i < chunks.length; i++) {
             chunks[i] = new Chunk_v1_18(16, DataPalette.createForChunk(), DataPalette.createForBiome());
-            chunks[i].set(0, 0, 0, WrappedBlockState.getByString("grass").getGlobalId());
+            WrappedBlockState state = WrappedBlockState.getByString("minecraft:grass_block[snowy=false]");
+            chunks[i].set(0, 0, 0, state.getGlobalId());
         }
-        Column column = new Column(0, 0, true, chunks, new TileEntity[0], new NBTCompound());
-        WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column);
+        Column column = new Column(0, 0, true, chunks, new TileEntity[0]);
+        WrapperPlayServerChunkData_1_18 chunkData = new WrapperPlayServerChunkData_1_18(column);
+        // Should be set to false when updating a chunk instead of sending a new one.
+        chunkData.trustEdges = true;
+        chunkData.skyLightMask = new BitSet(0);//TODO
+        chunkData.emptySkyLightMask = new BitSet(0);
+        chunkData.emptyBlockLightMask = new BitSet(0);
+
         //PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), chunkData);
 
         WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnPosition.getX(), spawnPosition.getY(), spawnPosition.getZ(), spawnPosition.getYaw(), spawnPosition.getPitch(), 0, 0, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
+
+        ItemStack sword = ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(ItemTypes.DIAMOND_SWORD.getMaxAmount()).build();
+        List<Enchantment> enchantments = new ArrayList<>();
+        enchantments.add(Enchantment.builder().type(EnchantmentTypes.FIRE_ASPECT).level(2).build());
+        sword.setEnchantments(enchantments);
+        WrapperPlayServerSetSlot setSlot = new WrapperPlayServerSetSlot(0, 0, 37, sword);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), setSlot);
 
         EntityHandler.onLogin(user);
     }

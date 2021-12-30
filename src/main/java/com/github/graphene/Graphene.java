@@ -32,8 +32,8 @@ import java.util.logging.Logger;
 
 public class Graphene {
     public static volatile boolean shouldTick = true;
-    public static final String SERVER_VERSION_NAME = ServerVersion.getLatest().getReleaseName();
-    public static final int SERVER_PROTOCOL_VERSION = ServerVersion.getLatest().getProtocolVersion();
+    public static String SERVER_VERSION_NAME;
+    public static int SERVER_PROTOCOL_VERSION;
     public static final int MAX_PLAYERS = 100;
     public static final String SERVER_DESCRIPTION = "Graphene Server";
     public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
@@ -53,6 +53,9 @@ public class Graphene {
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().init();
+        SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
+        SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
+        Graphene.LOGGER.info("Version: " + SERVER_VERSION_NAME);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
