@@ -47,7 +47,7 @@ public class EntityHandler implements PacketListener {
                 entityInformation.addUpdateTotal(UpdateType.POSITION);
                 entityInformation.addUpdateTotal(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) {
-                WrapperPlayClientPlayerPositionRotation positionRotationWrapper = new WrapperPlayClientPlayerPositionRotation(event);
+                WrapperPlayClientPlayerPositionAndRotation positionRotationWrapper = new WrapperPlayClientPlayerPositionAndRotation(event);
                 Vector3d position = positionRotationWrapper.getPosition();
 
                 entityInformation.setPosition(position.getX(), position.getY(), position.getZ());

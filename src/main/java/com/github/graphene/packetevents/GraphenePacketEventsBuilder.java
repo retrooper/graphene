@@ -161,11 +161,6 @@ public class GraphenePacketEventsBuilder {
             }
 
             @Override
-            public PEVersion getVersion() {
-                return PacketEvents.VERSION;
-            }
-
-            @Override
             public Logger getLogger() {
                 return logger;
             }
