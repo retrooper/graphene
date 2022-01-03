@@ -40,6 +40,7 @@ import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_
 import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
+import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
@@ -327,7 +328,7 @@ public class GraphenePacketListener implements PacketListener {
         WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
         user.setState(ConnectionState.PLAY);
-        Location spawnPosition = new Location(0, 6, 0, 0, 0);
+        Location spawnPosition = new Location(0, 2, 0, 0, 0);
         user.setEntityInformation(new EntityInformation(spawnPosition));
         Graphene.USERS.add(user);
         Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
@@ -395,19 +396,40 @@ public class GraphenePacketListener implements PacketListener {
         // TODO work on sending chunks
         Chunk_v1_18[] chunks = new Chunk_v1_18[1];
         for (int i = 0; i < chunks.length; i++) {
-            chunks[i] = new Chunk_v1_18(16, DataPalette.createForChunk(), DataPalette.createForBiome());
-            WrappedBlockState state = WrappedBlockState.getByString("minecraft:grass_block[snowy=false]");
-            chunks[i].set(0, 0, 0, state.getGlobalId());
+            DataPalette chunkPalette = DataPalette.createForChunk();
+            chunkPalette.set(0, 0, 0, WrappedBlockState.getByString("minecraft:dirt").getGlobalId());
+            chunkPalette.set(0, 0, 1, WrappedBlockState.getByString("minecraft:dirt").getGlobalId());
+            DataPalette biomePalette = DataPalette.createForBiome();
+            chunks[i] = new Chunk_v1_18(2, chunkPalette, biomePalette);
         }
         Column column = new Column(0, 0, true, chunks, new TileEntity[0]);
         WrapperPlayServerChunkData_1_18 chunkData = new WrapperPlayServerChunkData_1_18(column);
         // Should be set to false when updating a chunk instead of sending a new one.
         chunkData.trustEdges = true;
-        chunkData.skyLightMask = new BitSet(0);//TODO
+        chunkData.skyLightMask = new BitSet(0);
         chunkData.emptySkyLightMask = new BitSet(0);
-        chunkData.emptyBlockLightMask = new BitSet(0);
+        chunkData.blockLightMask = new BitSet(0);
 
-        //PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), chunkData);
+        chunkData.emptyBlockLightMask = new BitSet(0);
+        chunkData.skyLightArray = new byte[0][0];//2048 for second
+        chunkData.blockLightArray = new byte[0][0];//2048 for second
+
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), chunkData);
+
+
+       /* WrappedBlockState grassState = WrappedBlockState.getByString("minecraft:grass_block[snowy=false]");
+        WrapperPlayServerBlockChange[] changes = new WrapperPlayServerBlockChange[5];
+        changes[0] = new WrapperPlayServerBlockChange(new Vector3i(0, 0, 0), WrappedBlockState.getByString("minecraft:air").getGlobalId());
+        changes[1] = new WrapperPlayServerBlockChange(new Vector3i(0, 0, 0), grassState.getGlobalId());
+        changes[2] = new WrapperPlayServerBlockChange(new Vector3i(1, 0, 0), grassState.getGlobalId());
+        changes[3] = new WrapperPlayServerBlockChange(new Vector3i(0, 0, 1), grassState.getGlobalId());
+        changes[4] = new WrapperPlayServerBlockChange(new Vector3i(1, 0, 1), grassState.getGlobalId());
+        for (WrapperPlayServerBlockChange change : changes) {
+            PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), change);
+        }*/
+
+        WrapperPlayServerPlayerAbilities abilities = new WrapperPlayServerPlayerAbilities(true, true, true, true, 0.05f, 0.1f);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), abilities);
 
         WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnPosition.getX(), spawnPosition.getY(), spawnPosition.getZ(), spawnPosition.getYaw(), spawnPosition.getPitch(), 0, 0, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);

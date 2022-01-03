@@ -55,7 +55,7 @@ public class Graphene {
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
-        Graphene.LOGGER.info("Version: " + SERVER_VERSION_NAME);
+        Graphene.LOGGER.info("Starting Graphene server " + SERVER_VERSION_NAME);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -85,7 +85,7 @@ public class Graphene {
             Graphene.LOGGER.info("Starting tick system...");
             DEDICATED_TICK_THREAD.execute(Graphene::tick);
 
-            Graphene.LOGGER.info("Minecraft server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors() * 2) + " worker threads)");
+            Graphene.LOGGER.info("Server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors() * 2) + " worker threads)");
 
             // Bind and start to accept incoming connections.
             ChannelFuture f = b.bind(PORT).sync();
