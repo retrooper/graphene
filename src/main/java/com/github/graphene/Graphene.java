@@ -46,6 +46,7 @@ public class Graphene {
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
     private static long lastTickTime = 0L;
+    public static boolean ONLINE_MODE = false;
 
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();

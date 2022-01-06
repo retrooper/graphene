@@ -115,28 +115,31 @@ public class GraphenePacketListener implements PacketListener {
             case LOGIN:
                 if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
                     WrapperLoginClientLoginStart start = new WrapperLoginClientLoginStart(event);
-
+                    String username = start.getUsername();
                     //Map the player usernames with their netty channels
-                    PacketEvents.getAPI().getPlayerManager().CHANNELS.put(start.getUsername(), event.getChannel());
-                    user.setUsername(start.getUsername());
-                    UUID uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + user.getUsername()).getBytes(StandardCharsets.UTF_8));
-                    user.setUUID(uuid);
+                    PacketEvents.getAPI().getPlayerManager().CHANNELS.put(username, event.getChannel());
+                    UUID uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+                    user.setGameProfile(new GameProfile(uuid, username));
+                    if (Graphene.ONLINE_MODE) {
 
-                    //Encryption begins here
-                    String serverID = "";
-                    PublicKey key = Graphene.KEY_PAIR.getPublic();
-                    byte[] verifyToken = new byte[4];
-                    new Random().nextBytes(verifyToken);
+                        //Encryption begins here
+                        String serverID = "";
+                        PublicKey key = Graphene.KEY_PAIR.getPublic();
+                        byte[] verifyToken = new byte[4];
+                        new Random().nextBytes(verifyToken);
 
-                    user.setVerifyToken(verifyToken);
-                    user.setServerId(serverID);
+                        user.setVerifyToken(verifyToken);
+                        user.setServerId(serverID);
 
-                    WrapperLoginServerEncryptionRequest encryptionRequest = new WrapperLoginServerEncryptionRequest(serverID, key, verifyToken);
-                    PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), encryptionRequest);
-                    Graphene.LOGGER.info("Sent encryption request to " + user.getUsername());
+                        WrapperLoginServerEncryptionRequest encryptionRequest = new WrapperLoginServerEncryptionRequest(serverID, key, verifyToken);
+                        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), encryptionRequest);
+                        Graphene.LOGGER.info("Sent encryption request to " + user.getUsername());
+                    }
+                    else {
+                        sendPostLoginPackets(event);
+                    }
                 } else if (event.getPacketType() == PacketType.Login.Client.ENCRYPTION_RESPONSE) {
                     WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(event);
-                    user.setGameProfile(new GameProfile(user.getUUID(), user.getUsername()));
 
                     Graphene.LOGGER.info("Calling thread-pool for authenticating user " + user.getUsername() + "!");
 
@@ -208,9 +211,6 @@ public class GraphenePacketListener implements PacketListener {
                                 }
                                 user.setGameProfile(profile);
 
-                                user.setUUID(uuid);
-                                user.setUsername(username);
-
                                 ChannelPipeline pipeline = user.getChannel().pipeline();
 
                                 SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
@@ -279,10 +279,10 @@ public class GraphenePacketListener implements PacketListener {
 
     public static void handleLeave(User user) {
         for (User player : Graphene.USERS) {
-            WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(null, null, null, -1);
+            WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(null, user.getGameProfile(), null, -1);
             List<WrapperPlayServerPlayerInfo.PlayerData> dataList = new ArrayList<>();
             dataList.add(data);
-            WrapperPlayServerPlayerInfo outPlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, user.getUUID(), dataList);
+            WrapperPlayServerPlayerInfo outPlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, dataList);
             ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(player.getChannel());
             PacketEvents.getAPI().getPlayerManager().sendPacket(ch, outPlayerInfo);
         }
@@ -309,15 +309,14 @@ public class GraphenePacketListener implements PacketListener {
             //TODO User#getPing and then implement a getPing in packetevents
             WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(TextComponent.builder().text(player.getUsername()).build(), player.getGameProfile(), player.getGameMode(), 100);
             playerDataList.add(data);
-            WrapperPlayServerPlayerInfo playerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, player.getUUID(), playerDataList);
+            WrapperPlayServerPlayerInfo playerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, playerDataList);
             ChannelAbstract channel = PacketEvents.getAPI().getNettyManager().wrapChannel(user.getChannel());
             PacketEvents.getAPI().getPlayerManager().sendPacket(channel, playerInfo);
-
 
             List<WrapperPlayServerPlayerInfo.PlayerData> nextPlayerDataList = new ArrayList<>();
             WrapperPlayServerPlayerInfo.PlayerData nextData = new WrapperPlayServerPlayerInfo.PlayerData(TextComponent.builder().text(user.getUsername()).build(), user.getGameProfile(), user.getGameMode(), 100);
             nextPlayerDataList.add(nextData);
-            WrapperPlayServerPlayerInfo nextPlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, user.getUUID(), nextPlayerDataList);
+            WrapperPlayServerPlayerInfo nextPlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, nextPlayerDataList);
             ChannelAbstract pChannel = PacketEvents.getAPI().getNettyManager().wrapChannel(player.getChannel());
             PacketEvents.getAPI().getPlayerManager().sendPacket(pChannel, nextPlayerInfo);
         }
@@ -325,7 +324,7 @@ public class GraphenePacketListener implements PacketListener {
 
     public static void sendPostLoginPackets(PacketReceiveEvent event) {
         User user = (User) event.getPlayer();
-        WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getUUID(), user.getUsername());
+        WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getGameProfile());
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
         user.setState(ConnectionState.PLAY);
         Location spawnPosition = new Location(0, 2, 0, 0, 0);
@@ -394,13 +393,17 @@ public class GraphenePacketListener implements PacketListener {
         // send current player information
 
         // TODO work on sending chunks
-        Chunk_v1_18[] chunks = new Chunk_v1_18[1];
+        Chunk_v1_18[] chunks = new Chunk_v1_18[16];
         for (int i = 0; i < chunks.length; i++) {
-            DataPalette chunkPalette = DataPalette.createForChunk();
-            chunkPalette.set(0, 0, 0, WrappedBlockState.getByString("minecraft:dirt").getGlobalId());
-            chunkPalette.set(0, 0, 1, WrappedBlockState.getByString("minecraft:dirt").getGlobalId());
-            DataPalette biomePalette = DataPalette.createForBiome();
-            chunks[i] = new Chunk_v1_18(2, chunkPalette, biomePalette);
+            chunks[i] = new Chunk_v1_18(0, DataPalette.createForChunk(), DataPalette.createForBiome());
+            WrappedBlockState blockState = WrappedBlockState.getByString("minecraft:grass_block[snowy=false]");
+            for (int x = 0; x < 16; x++) {
+                for (int y = 0; y < 16; y++) {
+                    for (int z = 0; z < 16; z++) {
+                        chunks[i].set(x, y, z, blockState.getGlobalId());
+                    }
+                }
+            }
         }
         Column column = new Column(0, 0, true, chunks, new TileEntity[0]);
         WrapperPlayServerChunkData_1_18 chunkData = new WrapperPlayServerChunkData_1_18(column);

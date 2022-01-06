@@ -14,6 +14,7 @@ import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -63,7 +64,7 @@ public class EntityHandler implements PacketListener {
                 entityInformation.addUpdateTotal(UpdateType.ANGLE);
                 entityInformation.addUpdateTotal(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_FLYING) {
-                WrapperPlayClientPlayerFlying<?> flyingWrapper = new WrapperPlayClientPlayerFlying<>(event);
+                WrapperPlayClientPlayerFlying flyingWrapper = new WrapperPlayClientPlayerFlying(event);
                 entityInformation.setOnGround(flyingWrapper.isOnGround());
                 entityInformation.addUpdateTotal(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.ENTITY_ACTION) {
@@ -144,9 +145,9 @@ public class EntityHandler implements PacketListener {
                         case LATENCY:
                             List<WrapperPlayServerPlayerInfo.PlayerData> playerDataList = new ArrayList<>();
 
-                            playerDataList.add(new WrapperPlayServerPlayerInfo.PlayerData(null, null, null, (int) user.getLatency()));
+                            playerDataList.add(new WrapperPlayServerPlayerInfo.PlayerData(null, user.getGameProfile(), null, (int) user.getLatency()));
 
-                            packetQueue.add(new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.UPDATE_LATENCY, user.getUUID(), playerDataList));
+                            packetQueue.add(new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.UPDATE_LATENCY, playerDataList));
 
                             break;
                     }
@@ -189,7 +190,7 @@ public class EntityHandler implements PacketListener {
                     Location location = lUser.getEntityInformation().getPosition();
                     Location angle = lUser.getEntityInformation().getAngle();
 
-                    WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(lUser.getEntityId(), lUser.getUUID(), new Vector3d(location.getX(), location.getY(), location.getZ()), angle.getYaw(), angle.getPitch(), new ArrayList<>());
+                    WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(lUser.getEntityId(), lUser.getGameProfile().getId(), new Vector3d(location.getX(), location.getY(), location.getZ()), angle.getYaw(), angle.getPitch(), new ArrayList<>());
                     WrapperPlayServerEntityMetadata entityMetadata = getEntityMetadata(lUser);
 
                     PacketEvents.getAPI().getPlayerManager().sendPacket(user, spawnPlayer);

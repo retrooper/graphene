@@ -21,8 +21,6 @@ import java.util.UUID;
 public class User {
     public static int ENTITY_COUNT = 0;
     private final Channel channel;
-    private String username;
-    private UUID uuid;
     private ConnectionState state;
     private ClientVersion clientVersion;
     private final int entityID = ENTITY_COUNT++;
@@ -53,24 +51,12 @@ public class User {
         this.gameProfile = gameProfile;
     }
 
+    public String getUsername() {
+        return gameProfile.getName();
+    }
+
     public Channel getChannel() {
         return channel;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public UUID getUUID() {
-        return uuid;
-    }
-
-    public void setUUID(UUID uuid) {
-        this.uuid = uuid;
     }
 
     public ConnectionState getState() {
