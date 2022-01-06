@@ -278,6 +278,10 @@ public class GraphenePacketListener implements PacketListener {
     }
 
     public static void handleLeave(User user) {
+        Graphene.USERS.remove(user);
+        TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).build();
+        TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.left")
+                .appendWith(withComponent).build();
         for (User player : Graphene.USERS) {
             WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(null, user.getGameProfile(), null, -1);
             List<WrapperPlayServerPlayerInfo.PlayerData> dataList = new ArrayList<>();
@@ -285,26 +289,27 @@ public class GraphenePacketListener implements PacketListener {
             WrapperPlayServerPlayerInfo outPlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, dataList);
             ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(player.getChannel());
             PacketEvents.getAPI().getPlayerManager().sendPacket(ch, outPlayerInfo);
+
+            WrapperPlayServerDestroyEntities destroyEntities = new WrapperPlayServerDestroyEntities(user.getEntityId());
+            PacketEvents.getAPI().getPlayerManager().sendPacket(ch, destroyEntities);
+
+            WrapperPlayServerChatMessage leftMessage = new WrapperPlayServerChatMessage(translatableComponent, WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+            PacketEvents.getAPI().getPlayerManager().sendPacket(ch, leftMessage);
         }
 
-        sendMessage(TextComponent.builder().text("[" + user.getUsername() + "] ").color(Color.GOLD).append(TextComponent.builder().text("has left the server!").color(Color.WHITE).build()).build());
-        Graphene.USERS.remove(user);
     }
 
     public static void handleLogin(User user) {
-        // use translations!
         ClickEvent clickEvent = new ClickEvent(ClickEvent.ClickType.SUGGEST_COMMAND, "/tell " + user.getUsername() + " Welcome!");
         TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).clickEvent(clickEvent).build();
         TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.joined")
                 .appendWith(withComponent).build();
 
-        for (User online : Graphene.USERS) {
-            WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent, WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
-            ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(online.getChannel());
-            PacketEvents.getAPI().getPlayerManager().sendPacket(ch, loginMessage);
-        }
-
         for (User player : Graphene.USERS) {
+            WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent, WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+            ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(player.getChannel());
+            PacketEvents.getAPI().getPlayerManager().sendPacket(ch, loginMessage);
+
             List<WrapperPlayServerPlayerInfo.PlayerData> playerDataList = new ArrayList<>();
             //TODO User#getPing and then implement a getPing in packetevents
             WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(TextComponent.builder().text(player.getUsername()).build(), player.getGameProfile(), player.getGameMode(), 100);

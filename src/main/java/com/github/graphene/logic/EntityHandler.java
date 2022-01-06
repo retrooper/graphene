@@ -8,6 +8,7 @@ import com.github.graphene.util.entity.UpdateType;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
+import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
@@ -206,10 +207,12 @@ public class EntityHandler implements PacketListener {
                             .arrowInBodyCount(4)
                             .onFire(true)
                             .pose(EntityPose.STANDING)
+                            .crouching(true)
                             .build();
                     WrapperPlayServerEntityMetadata metaData = new WrapperPlayServerEntityMetadata(lUser.getEntityId(), playerDataProvider.encode());
                     PacketEvents.getAPI().getPlayerManager().sendPacket(user, metaData);
-                    //TODO sEND TO OUR SELF
+                    WrapperPlayServerEntityMetadata metaData2 = new WrapperPlayServerEntityMetadata(user.getEntityId(), playerDataProvider.encode());
+                    PacketEvents.getAPI().getPlayerManager().sendPacket(user, metaData2);
                 }
             }
         //}
