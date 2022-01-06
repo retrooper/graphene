@@ -4,7 +4,6 @@ import com.github.graphene.Graphene;
 import com.github.graphene.user.User;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
-import com.github.graphene.util.entity.Location;
 import com.github.graphene.util.entity.UpdateType;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
@@ -14,15 +13,14 @@ import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
+import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -93,7 +91,7 @@ public class EntityHandler implements PacketListener {
             }
         }
     }
-    
+
     //TODO Analyse the way we tick
     public static void onTick() {
         for (User user : Graphene.USERS) {
@@ -189,8 +187,9 @@ public class EntityHandler implements PacketListener {
                 if (lUser.getEntityId() != user.getEntityId()) {
                     Location location = lUser.getEntityInformation().getPosition();
                     Location angle = lUser.getEntityInformation().getAngle();
+                    Location newLocation = new Location(location.getPosition(), angle.getYaw(), angle.getPitch());
 
-                    WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(lUser.getEntityId(), lUser.getGameProfile().getId(), new Vector3d(location.getX(), location.getY(), location.getZ()), angle.getYaw(), angle.getPitch(), new ArrayList<>());
+                    WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(lUser.getEntityId(), lUser.getGameProfile().getId(), newLocation);
                     WrapperPlayServerEntityMetadata entityMetadata = getEntityMetadata(lUser);
 
                     PacketEvents.getAPI().getPlayerManager().sendPacket(user, spawnPlayer);
@@ -231,7 +230,7 @@ public class EntityHandler implements PacketListener {
         ClientSettings clientSettings = user.getClientSettings();
 
         information.add(new EntityData(17, EntityDataTypes.BYTE, clientSettings.getDisplayedSkinParts()));
-        information.add(new EntityData(18, EntityDataTypes.BYTE, (byte)clientSettings.getMainHand().getId()));
+        information.add(new EntityData(18, EntityDataTypes.BYTE, (byte) clientSettings.getMainHand().getId()));
 
         byte flagBitmask = 0;
 

@@ -8,7 +8,7 @@ import com.github.graphene.packetevents.manager.netty.ByteBufUtil;
 import com.github.graphene.user.User;
 import com.github.graphene.util.UUIDUtil;
 import com.github.graphene.util.entity.EntityInformation;
-import com.github.graphene.util.entity.Location;
+import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.graphene.util.entity.UpdateType;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerChunkData_1_18;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
@@ -327,8 +327,8 @@ public class GraphenePacketListener implements PacketListener {
         WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getGameProfile());
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), loginSuccess);
         user.setState(ConnectionState.PLAY);
-        Location spawnPosition = new Location(0, 2, 0, 0, 0);
-        user.setEntityInformation(new EntityInformation(spawnPosition));
+        Location spawnLocation = new Location(6, 16, 6, 0, 0);
+        user.setEntityInformation(new EntityInformation(spawnLocation));
         Graphene.USERS.add(user);
         Graphene.LOGGER.info(user.getUsername() + " has joined the server!");
         byte[] dimensionBytes = new byte[0];
@@ -379,8 +379,8 @@ public class GraphenePacketListener implements PacketListener {
         WrapperPlayServerDifficulty difficulty = new WrapperPlayServerDifficulty(Difficulty.HARD, false);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), difficulty);
 
-        WrapperPlayServerPlayerAbilities playerAbilities = new WrapperPlayServerPlayerAbilities(false, false, false, false, 0.05f, 0.1f);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), playerAbilities);
+        WrapperPlayServerPlayerAbilities abilities = new WrapperPlayServerPlayerAbilities(true, false, true, true, 0.05f, 0.1f);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), abilities);
 
         handleLogin(user);
 
@@ -395,15 +395,25 @@ public class GraphenePacketListener implements PacketListener {
         // TODO work on sending chunks
         Chunk_v1_18[] chunks = new Chunk_v1_18[16];
         for (int i = 0; i < chunks.length; i++) {
-            chunks[i] = new Chunk_v1_18(0, DataPalette.createForChunk(), DataPalette.createForBiome());
+            DataPalette biomePalette  = DataPalette.createForBiome();
+            biomePalette.set(0, 0, 0, 0);
+            DataPalette chunkPalette = DataPalette.createForChunk();
+            int count = 0;
             WrappedBlockState blockState = WrappedBlockState.getByString("minecraft:grass_block[snowy=false]");
             for (int x = 0; x < 16; x++) {
                 for (int y = 0; y < 16; y++) {
                     for (int z = 0; z < 16; z++) {
-                        chunks[i].set(x, y, z, blockState.getGlobalId());
+                        if (i == 0) {
+                            chunkPalette.set(x, y, z, blockState.getGlobalId());
+                        }
+                        else {
+                            chunkPalette.set(x, y, z, 0);
+                        }
+                        count++;
                     }
                 }
             }
+            chunks[i] = new Chunk_v1_18(count, chunkPalette, biomePalette);
         }
         Column column = new Column(0, 0, true, chunks, new TileEntity[0]);
         WrapperPlayServerChunkData_1_18 chunkData = new WrapperPlayServerChunkData_1_18(column);
@@ -420,21 +430,22 @@ public class GraphenePacketListener implements PacketListener {
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), chunkData);
 
 
-       /* WrappedBlockState grassState = WrappedBlockState.getByString("minecraft:grass_block[snowy=false]");
-        WrapperPlayServerBlockChange[] changes = new WrapperPlayServerBlockChange[5];
-        changes[0] = new WrapperPlayServerBlockChange(new Vector3i(0, 0, 0), WrappedBlockState.getByString("minecraft:air").getGlobalId());
-        changes[1] = new WrapperPlayServerBlockChange(new Vector3i(0, 0, 0), grassState.getGlobalId());
-        changes[2] = new WrapperPlayServerBlockChange(new Vector3i(1, 0, 0), grassState.getGlobalId());
-        changes[3] = new WrapperPlayServerBlockChange(new Vector3i(0, 0, 1), grassState.getGlobalId());
-        changes[4] = new WrapperPlayServerBlockChange(new Vector3i(1, 0, 1), grassState.getGlobalId());
+
+        WrapperPlayServerBlockChange[] changes = new WrapperPlayServerBlockChange[16 * 16];
+        int i = 0;
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                int y = 15;
+                WrappedBlockState state = WrappedBlockState.getByString("minecraft:light_gray_stained_glass");
+                changes[i++] = new WrapperPlayServerBlockChange(new Vector3i(x, y, z), state.getGlobalId());
+            }
+        }
         for (WrapperPlayServerBlockChange change : changes) {
             PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), change);
-        }*/
+        }
 
-        WrapperPlayServerPlayerAbilities abilities = new WrapperPlayServerPlayerAbilities(true, true, true, true, 0.05f, 0.1f);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), abilities);
 
-        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnPosition.getX(), spawnPosition.getY(), spawnPosition.getZ(), spawnPosition.getYaw(), spawnPosition.getPitch(), 0, 0, true);
+        WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(), spawnLocation.getYaw(), spawnLocation.getPitch(), (byte)0, 0, true);
         PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), positionAndLook);
 
         ItemStack sword = ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(ItemTypes.DIAMOND_SWORD.getMaxAmount()).build();

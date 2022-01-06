@@ -1,5 +1,7 @@
 package com.github.graphene.util.entity;
 
+import com.github.retrooper.packetevents.protocol.world.Location;
+
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,21 +30,21 @@ public class EntityInformation {
     private double groundZ;
     private boolean groundUpdate;
 
-    public EntityInformation(Location spawnPosition) {
-        x = spawnPosition.getX();
-        y = spawnPosition.getY();
-        z = spawnPosition.getZ();
+    public EntityInformation(Location spawnLocation) {
+        x = spawnLocation.getX();
+        y = spawnLocation.getY();
+        z = spawnLocation.getZ();
 
-        lastX = spawnPosition.getX();
-        lastY = spawnPosition.getY();
-        lastZ = spawnPosition.getZ();
+        lastX = spawnLocation.getX();
+        lastY = spawnLocation.getY();
+        lastZ = spawnLocation.getZ();
 
-        groundX = spawnPosition.getX();
-        groundY = spawnPosition.getY();
-        groundZ = spawnPosition.getZ();
+        groundX = spawnLocation.getX();
+        groundY = spawnLocation.getY();
+        groundZ = spawnLocation.getZ();
 
-        yaw = spawnPosition.getYaw();
-        pitch = spawnPosition.getPitch();
+        yaw = spawnLocation.getYaw();
+        pitch = spawnLocation.getPitch();
 
         onFire = false;
         health = 20.0f;
@@ -63,7 +65,7 @@ public class EntityInformation {
     }
 
     public Location getPosition() {
-        return new Location(x, y, z);
+        return new Location(x, y, z, 0, 0);
     }
 
     public void resetLastPosition() {
@@ -78,7 +80,7 @@ public class EntityInformation {
     }
 
     public Location getAngle() {
-        return new Location(this.yaw, this.pitch);
+        return new Location(0, 0, 0, this.yaw, this.pitch);
     }
 
     public void setGroundPosition() {
@@ -88,7 +90,7 @@ public class EntityInformation {
     }
 
     public Location getGroundPosition() {
-        return new Location(this.groundX, this.groundY, this.groundZ);
+        return new Location(this.groundX, this.groundY, this.groundZ, 0, 0);
     }
 
     public void setOnGround(boolean onGround) {
@@ -100,7 +102,7 @@ public class EntityInformation {
     }
 
     public Location getLastPosition() {
-        return new Location(this.lastX, this.lastY, this.lastZ);
+        return new Location(this.lastX, this.lastY, this.lastZ, 0, 0);
     }
 
     public void addUpdateTotal(UpdateType updateType) {
