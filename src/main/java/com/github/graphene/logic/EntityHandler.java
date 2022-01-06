@@ -11,9 +11,14 @@ import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
+import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
+import com.github.retrooper.packetevents.protocol.entity.data.provider.PlayerDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
+import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
+import com.github.retrooper.packetevents.protocol.player.SkinSection;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -175,6 +180,7 @@ public class EntityHandler implements PacketListener {
             } else {
                 Queue<User> users = new ConcurrentLinkedQueue<>();
                 users.add(user);
+
                 sendEntities(lUser, users);
             }
         }
@@ -182,7 +188,7 @@ public class EntityHandler implements PacketListener {
 
     public static void sendEntities(User user, Queue<User> users) {
         //Only operate if 2 or more users are online
-        if (users.size() >= 2) {
+        //if (users.size() >= 2) {
             for (User lUser : users) {
                 if (lUser.getEntityId() != user.getEntityId()) {
                     Location location = lUser.getEntityInformation().getPosition();
@@ -190,13 +196,23 @@ public class EntityHandler implements PacketListener {
                     Location newLocation = new Location(location.getPosition(), angle.getYaw(), angle.getPitch());
 
                     WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(lUser.getEntityId(), lUser.getGameProfile().getId(), newLocation);
-                    WrapperPlayServerEntityMetadata entityMetadata = getEntityMetadata(lUser);
-
+                    //WrapperPlayServerEntityMetadata entityMetadata = getEntityMetadata(lUser);
                     PacketEvents.getAPI().getPlayerManager().sendPacket(user, spawnPlayer);
-//                    PacketEvents.getAPI().getPlayerManager().sendPacket(user, entityMetadata);
+                    EntityDataProvider playerDataProvider = PlayerDataProvider.builderPlayer().skinParts(SkinSection.getAllSections())
+                            .mainArm(HumanoidArm.RIGHT)
+                            .leftShoulderNBT(new NBTCompound())
+                            .rightShoulderNBT(new NBTCompound())
+                            .hand(InteractionHand.MAIN_HAND)
+                            .arrowInBodyCount(4)
+                            .onFire(true)
+                            .pose(EntityPose.STANDING)
+                            .build();
+                    WrapperPlayServerEntityMetadata metaData = new WrapperPlayServerEntityMetadata(lUser.getEntityId(), playerDataProvider.encode());
+                    PacketEvents.getAPI().getPlayerManager().sendPacket(user, metaData);
+                    //TODO sEND TO OUR SELF
                 }
             }
-        }
+        //}
     }
 
     public static float wrapAngleTo180(float num) {
