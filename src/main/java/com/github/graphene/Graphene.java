@@ -58,6 +58,8 @@ public class Graphene {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().getEventManager()
+                        .registerListener(new ChatListener(), PacketListenerPriority.LOWEST, true, false);
+        PacketEvents.getAPI().getEventManager()
                 .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false, false);
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();

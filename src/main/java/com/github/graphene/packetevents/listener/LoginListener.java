@@ -103,7 +103,7 @@ public class LoginListener implements PacketListener {
         else if (event.getPacketType() == PacketType.Login.Client.ENCRYPTION_RESPONSE) {
             WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(event);
             // Authenticate and handle player connection on our worker threads
-            Graphene.WORKER_THREADS.execute(() -> {
+            //Graphene.WORKER_THREADS.execute(() -> {
                 //Decrypt the verify token
                 byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Graphene.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
                 //Private key from the server's key pair
@@ -194,7 +194,7 @@ public class LoginListener implements PacketListener {
                     Graphene.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
                     user.forceDisconnect();
                 }
-            });
+           // });
         }
     }
 }

@@ -23,6 +23,7 @@ public class ChatListener implements PacketListener {
                     .append(TextComponent.builder().text(": " + msg).color(Color.WHITE).build()).build();
             //Send it to everyone(including the sender)
             ServerUtil.broadcastMessage(displayComponent);
+            System.out.println("siuu!");
         }
     }
 }
