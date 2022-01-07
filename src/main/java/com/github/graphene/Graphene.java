@@ -4,12 +4,8 @@ import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
-import com.github.graphene.packetevents.listener.EntityHandler;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
-import com.github.graphene.packetevents.listener.JoinListener;
-import com.github.graphene.packetevents.listener.KeepAliveListener;
-import com.github.graphene.packetevents.listener.LoginListener;
-import com.github.graphene.packetevents.listener.ServerListPingListener;
+import com.github.graphene.packetevents.listener.*;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -59,8 +55,6 @@ public class Graphene {
                 .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST, true, false);
-        PacketEvents.getAPI().getEventManager()
-                .registerListener(new JoinListener(), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().getEventManager()
@@ -158,7 +152,7 @@ public class Graphene {
             // If an error is thrown then shutdown because we
             // literally can't start the server without it, also
             // stops IntelliJ from asking to assert not null on keys.
-            System.out.println("Failed to generate RSA-1024 key, cannot start server!");
+            Graphene.LOGGER.severe("Failed to generate RSA-1024 key, cannot start server!");
             System.exit(2);
             return null;
         }

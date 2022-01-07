@@ -207,8 +207,8 @@ public class EntityHandler implements PacketListener {
                     metadata.prepareForSend();
                     metadata.getBuffer().retain();
                     user.sendPacket(metadata);
+                    metadata.getBuffer().retain();
                     onlinePlayer.sendPacket(metadata);
-                    metadata.getBuffer().release();
                 }
             }
         }

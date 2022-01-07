@@ -7,6 +7,7 @@ import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.component.serializer.ComponentSerializer;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.GameProfile;
@@ -90,6 +91,8 @@ public class LoginListener implements PacketListener {
                     //Since we're not in online mode, we just inform the client that they have successfully logged in.
                     WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getGameProfile());
                     user.sendPacket(loginSuccess);
+                    user.setState(ConnectionState.PLAY);
+                    JoinManager.handleJoin(user);
                 }
                 else {
                     user.kickLogin("A user with the username " + username + " is already logged in.");
@@ -128,7 +131,6 @@ public class LoginListener implements PacketListener {
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                         connection.setRequestProperty("Authorization", null);
                         connection.setRequestMethod("GET");
-                        Graphene.LOGGER.info("Authenticating " + user.getUsername() + "...");
                         if (connection.getResponseCode() == 204) {
                             Graphene.LOGGER.info("Failed to authenticate " + user.getUsername() + "!");
                             user.kickLogin("Failed to authenticate your connection.");
@@ -182,7 +184,8 @@ public class LoginListener implements PacketListener {
                         //Note: The login success packet will be encrypted here.
                         WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getGameProfile());
                         user.sendPacket(loginSuccess);
-
+                        user.setState(ConnectionState.PLAY);
+                        JoinManager.handleJoin(user);
                     } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
                             | InvalidKeyException | InvalidAlgorithmParameterException ex) {
                         ex.printStackTrace();
