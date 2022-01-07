@@ -1,4 +1,4 @@
-package com.github.graphene.logic;
+package com.github.graphene.packetevents.listener;
 
 import com.github.graphene.Graphene;
 import com.github.graphene.user.User;
@@ -29,13 +29,11 @@ import java.util.List;
 import java.util.Queue;
 
 public class EntityHandler implements PacketListener {
-
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         User user = (User) event.getPlayer();
         assert user != null;
         EntityInformation entityInformation = user.getEntityInformation();
-
         if (user.getState() == ConnectionState.PLAY) {
             if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
                 user.setClientSettings(new ClientSettings(new WrapperPlayClientSettings(event)));
@@ -68,7 +66,6 @@ public class EntityHandler implements PacketListener {
                 entityInformation.queueUpdate(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.ENTITY_ACTION) {
                 WrapperPlayClientEntityAction entityActionWrapper = new WrapperPlayClientEntityAction(event);
-
                 if (entityActionWrapper.getEntityId() == user.getEntityId()) {
                     switch (entityActionWrapper.getAction()) {
                         case START_SNEAKING -> entityInformation.setSneaking(true);
@@ -86,7 +83,7 @@ public class EntityHandler implements PacketListener {
 
                 for (User lUser : Graphene.USERS) {
                     if (lUser.getEntityId() != user.getEntityId()) {
-                        PacketEvents.getAPI().getPlayerManager().sendPacket(lUser, entityAnimationWrapper);
+                        lUser.sendPacket(entityAnimationWrapper);
                     }
                 }
             }
@@ -140,8 +137,7 @@ public class EntityHandler implements PacketListener {
 
                             break;
                         case METADATA:
-                             packetQueue.add(getEntityMetadata(user));
-
+                             packetQueue.add(getEntityMetadata(user.getEntityId(), user));
                             break;
                         case LATENCY:
                             List<WrapperPlayServerPlayerInfo.PlayerData> playerDataList = new ArrayList<>();
@@ -172,28 +168,28 @@ public class EntityHandler implements PacketListener {
     }
 
     public static void onLogin(User user) {
-        for (User lUser : Graphene.USERS) {
-            if (user.getEntityId() == lUser.getEntityId()) {
-                sendEntities(user, Graphene.USERS, 2);
+        for (User p : Graphene.USERS) {
+            if (user.getEntityId() == p.getEntityId()) {
+                //Spawn us for others.
+                spawnUser(user, Graphene.USERS, 2);
             } else {
+                //Spawn the others for us.
+                //As an optimization, we set the users to have one player.
                 Queue<User> users = new LinkedList<>();
                 users.add(user);
-                sendEntities(lUser, users, 1);
+                spawnUser(p, users, 1);
             }
         }
     }
 
-    public static void sendEntities(User user, Queue<User> users, int minToOperate) {
-        //Only operate if 2 or more users are online
-        //if (users.size() >= 2) {
-        if (users.size() >= minToOperate) {
-            for (User lUser : users) {
-                if (lUser.getEntityId() != user.getEntityId()) {
-                    Location location = lUser.getEntityInformation().getLocation();
+    public static void spawnUser(User user, Queue<User> onlinePlayers, int minToOperate) {
+        if (onlinePlayers.size() >= minToOperate) {
+            for (User onlinePlayer : onlinePlayers) {
+                if (onlinePlayer.getEntityId() != user.getEntityId()) {
+                    Location location = onlinePlayer.getEntityInformation().getLocation();
                     Location newLocation = new Location(location.getPosition(), location.getYaw(), location.getPitch());
 
-                    WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(lUser.getEntityId(), lUser.getGameProfile().getId(), newLocation);
-                    //WrapperPlayServerEntityMetadata entityMetadata = getEntityMetadata(lUser);
+                    WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(onlinePlayer.getEntityId(), onlinePlayer.getGameProfile().getId(), newLocation);
                     PacketEvents.getAPI().getPlayerManager().sendPacket(user, spawnPlayer);
                     EntityDataProvider playerDataProvider = PlayerDataProvider.builderPlayer().skinParts(SkinSection.getAllSections())
                             .mainArm(HumanoidArm.RIGHT)
@@ -205,10 +201,14 @@ public class EntityHandler implements PacketListener {
                             .pose(EntityPose.STANDING)
                             .crouching(true)
                             .build();
-                    WrapperPlayServerEntityMetadata metaData = new WrapperPlayServerEntityMetadata(lUser.getEntityId(), playerDataProvider.encode());
-                    PacketEvents.getAPI().getPlayerManager().sendPacket(user, metaData);
-                    WrapperPlayServerEntityMetadata metaData2 = new WrapperPlayServerEntityMetadata(user.getEntityId(), playerDataProvider.encode());
-                    PacketEvents.getAPI().getPlayerManager().sendPacket(user, metaData2);
+
+                    //Inform us about our own entity metadata
+                    WrapperPlayServerEntityMetadata metadata = getEntityMetadata(user.getEntityId(), user);
+                    metadata.prepareForSend();
+                    metadata.getBuffer().retain();
+                    user.sendPacket(metadata);
+                    onlinePlayer.sendPacket(metadata);
+                    metadata.getBuffer().release();
                 }
             }
         }
@@ -238,7 +238,7 @@ public class EntityHandler implements PacketListener {
         return new WrapperPlayServerEntityTeleport(user.getEntityId(), new Vector3d(location.getX(), location.getY(), location.getZ()), location.getYaw(), location.getPitch(), onGround);
     }
 
-    public static WrapperPlayServerEntityMetadata getEntityMetadata(User user) {
+    public static WrapperPlayServerEntityMetadata getEntityMetadata(int targetEntityId, User user) {
         EntityInformation entityInformation = user.getEntityInformation();
         ClientSettings clientSettings = user.getClientSettings();
 
@@ -256,7 +256,7 @@ public class EntityHandler implements PacketListener {
                         .hasGravity(true)
                         .invisible(entityInformation.isInvisible())
                         .pose(entityPose).build();
-        return new WrapperPlayServerEntityMetadata(user.getEntityId(), playerDataProvider.encode());
+        return new WrapperPlayServerEntityMetadata(targetEntityId, playerDataProvider.encode());
     }
 
 }

@@ -1,6 +1,5 @@
 package com.github.graphene.packetevents;
 
-import com.github.graphene.logic.EntityHandler;
 import com.github.graphene.packetevents.injector.ChannelInjectorImpl;
 import com.github.graphene.packetevents.manager.netty.NettyManagerImpl;
 import com.github.graphene.packetevents.manager.player.PlayerManagerImpl;
@@ -17,7 +16,6 @@ import com.github.retrooper.packetevents.netty.NettyManager;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.settings.PacketEventsSettings;
 import com.github.retrooper.packetevents.util.LogManager;
-import com.github.retrooper.packetevents.util.PEVersion;
 import com.github.retrooper.packetevents.util.updatechecker.UpdateChecker;
 import com.github.retrooper.packetevents.injector.InternalPacketListener;
 
