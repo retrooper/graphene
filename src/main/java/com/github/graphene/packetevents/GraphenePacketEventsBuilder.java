@@ -85,9 +85,7 @@ public class GraphenePacketEventsBuilder {
                     loaded = true;
 
                     //Register internal packet listener (should be the first listener)
-                    getEventManager().registerListener(new InternalPacketListener(), PacketListenerPriority.LOWEST, true);
-                    getEventManager().registerListener(new GraphenePacketListener(), PacketListenerPriority.LOWEST, false);
-                    getEventManager().registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false);
+                    getEventManager().registerListener(new InternalPacketListener(), PacketListenerPriority.LOWEST, true, false);
                 }
             }
 

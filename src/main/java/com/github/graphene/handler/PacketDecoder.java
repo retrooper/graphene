@@ -1,7 +1,7 @@
 package com.github.graphene.handler;
 
-import com.github.graphene.packetevents.GraphenePacketListener;
 import com.github.graphene.user.User;
+import com.github.graphene.util.ServerUtil;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
@@ -55,7 +55,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         if (user.getState() == ConnectionState.PLAY) {
-            GraphenePacketListener.handleLeave(user);
+            ServerUtil.handlePlayerLeave(user);
         }
         super.channelInactive(ctx);
     }

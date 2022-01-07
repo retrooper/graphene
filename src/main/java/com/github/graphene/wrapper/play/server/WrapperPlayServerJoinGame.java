@@ -38,7 +38,7 @@ public class WrapperPlayServerJoinGame extends PacketWrapper<WrapperPlayServerJo
     public WrapperPlayServerJoinGame(int entityID, boolean isHardcore, GameMode gamemode,
                                      @Nullable GameMode previousGameMode,
                                      List<String> worldNames, NBTCompound dimensionCodec, NBTCompound dimension,
-                                     String worldName, long seed, long hashedSeed, int maxPlayers,
+                                     String worldName, long hashedSeed, int maxPlayers,
                                      int viewDistance, int simulationDistance,
                                      boolean reducedDebugInfo, boolean enableRespawnScreen,
                                      boolean isDebug, boolean isFlat) {

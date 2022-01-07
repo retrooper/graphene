@@ -3,19 +3,24 @@ package com.github.graphene.user;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.Color;
+import com.github.retrooper.packetevents.protocol.chat.component.BaseComponent;
 import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
+import java.util.HashSet;
 import java.util.UUID;
 
 public class User {
@@ -40,7 +45,7 @@ public class User {
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
         this.state = state;
-        this.clientSettings = new ClientSettings("", 0, (byte) 0, WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
+        this.clientSettings = new ClientSettings("", 0, new HashSet<>(), WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
     }
 
     public GameProfile getGameProfile() {
@@ -121,6 +126,21 @@ public class User {
 
     public InetSocketAddress getAddress() {
         return (InetSocketAddress) channel.remoteAddress();
+    }
+
+    public void sendPacket(PacketWrapper<?> wrapper) {
+        ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(channel);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(ch, wrapper);
+    }
+
+    public void sendMessage(BaseComponent component) {
+        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(component, WrapperPlayServerChatMessage.ChatPosition.CHAT,
+                new UUID(0L, 0L));
+        sendPacket(chatMessage);
+    }
+
+    public void sendMessage(String message) {
+        sendMessage(TextComponent.builder().text(message).build());
     }
 
     public void forceDisconnect() {

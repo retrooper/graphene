@@ -8,10 +8,7 @@ import com.github.graphene.util.entity.UpdateType;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
-import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
-import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.PlayerDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
@@ -27,9 +24,9 @@ import com.github.retrooper.packetevents.wrapper.play.client.*;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class EntityHandler implements PacketListener {
 
@@ -42,35 +39,33 @@ public class EntityHandler implements PacketListener {
         if (user.getState() == ConnectionState.PLAY) {
             if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
                 user.setClientSettings(new ClientSettings(new WrapperPlayClientSettings(event)));
-                entityInformation.addUpdateTotal(UpdateType.METADATA);
+                entityInformation.queueUpdate(UpdateType.METADATA);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION) {
                 WrapperPlayClientPlayerPosition positionWrapper = new WrapperPlayClientPlayerPosition(event);
                 Vector3d position = positionWrapper.getPosition();
-
-                entityInformation.setPosition(position.getX(), position.getY(), position.getZ());
+                entityInformation.getLocation().setPosition(position);
                 entityInformation.setOnGround(positionWrapper.isOnGround());
-                entityInformation.addUpdateTotal(UpdateType.POSITION);
-                entityInformation.addUpdateTotal(UpdateType.GROUND);
+                entityInformation.queueUpdate(UpdateType.POSITION);
+                entityInformation.queueUpdate(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) {
                 WrapperPlayClientPlayerPositionAndRotation positionRotationWrapper = new WrapperPlayClientPlayerPositionAndRotation(event);
-                Vector3d position = positionRotationWrapper.getPosition();
-
-                entityInformation.setPosition(position.getX(), position.getY(), position.getZ());
-                entityInformation.setAngle(wrapAngleTo180(positionRotationWrapper.getYaw()), positionRotationWrapper.getPitch());
+                Location location = new Location(positionRotationWrapper.getPosition(),
+                        positionRotationWrapper.getYaw(), positionRotationWrapper.getPitch());
+                entityInformation.setLocation(location);
                 entityInformation.setOnGround(positionRotationWrapper.isOnGround());
-                entityInformation.addUpdateTotal(UpdateType.POSITION_ANGLE);
-                entityInformation.addUpdateTotal(UpdateType.GROUND);
+                entityInformation.queueUpdate(UpdateType.POSITION_ANGLE);
+                entityInformation.queueUpdate(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_ROTATION) {
                 WrapperPlayClientPlayerRotation rotationWrapper = new WrapperPlayClientPlayerRotation(event);
-
-                entityInformation.setAngle(wrapAngleTo180(rotationWrapper.getYaw()), rotationWrapper.getPitch());
+                entityInformation.getLocation().setYaw(rotationWrapper.getYaw());
+                entityInformation.getLocation().setPitch(rotationWrapper.getPitch());
                 entityInformation.setOnGround(rotationWrapper.isOnGround());
-                entityInformation.addUpdateTotal(UpdateType.ANGLE);
-                entityInformation.addUpdateTotal(UpdateType.GROUND);
+                entityInformation.queueUpdate(UpdateType.ANGLE);
+                entityInformation.queueUpdate(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_FLYING) {
                 WrapperPlayClientPlayerFlying flyingWrapper = new WrapperPlayClientPlayerFlying(event);
                 entityInformation.setOnGround(flyingWrapper.isOnGround());
-                entityInformation.addUpdateTotal(UpdateType.GROUND);
+                entityInformation.queueUpdate(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.ENTITY_ACTION) {
                 WrapperPlayClientEntityAction entityActionWrapper = new WrapperPlayClientEntityAction(event);
 
@@ -82,7 +77,7 @@ public class EntityHandler implements PacketListener {
                         case STOP_SPRINTING -> entityInformation.setSprinting(false);
                     }
 
-                    entityInformation.addUpdateTotal(UpdateType.METADATA);
+                    entityInformation.queueUpdate(UpdateType.METADATA);
                 }
             } else if (event.getPacketType() == PacketType.Play.Client.ANIMATION) {
                 WrapperPlayClientAnimation animationWrapper = new WrapperPlayClientAnimation(event);
@@ -98,52 +93,54 @@ public class EntityHandler implements PacketListener {
         }
     }
 
-    //TODO Analyse the way we tick
     public static void onTick() {
         for (User user : Graphene.USERS) {
             EntityInformation entityInformation = user.getEntityInformation();
-            if (!entityInformation.getTotalUpdates().isEmpty()) {
-                Queue<UpdateType> totalUpdates = entityInformation.getTotalUpdates();
-                Location position = entityInformation.getPosition();
+            if (!entityInformation.getQueuedUpdates().isEmpty()) {
+                Queue<UpdateType> totalUpdates = entityInformation.getQueuedUpdates();
+                Location currentLocation = entityInformation.getLocation();
                 Location lastPosition = entityInformation.getLastPosition();
-                Location angle = entityInformation.getAngle();
                 List<PacketWrapper<?>> packetQueue = new ArrayList<>();
 
                 for (UpdateType updateType : totalUpdates) {
                     switch (updateType) {
                         case POSITION:
-                            if (shouldSendEntityTeleport(position, lastPosition)) {
+                            if (shouldSendEntityTeleport(currentLocation, lastPosition)) {
                                 packetQueue.add(getEntityTeleport(user));
                             } else {
-                                double deltaX = (position.getX() * 32 - lastPosition.getX() * 32) * 128;
-                                double deltaY = (position.getY() * 32 - lastPosition.getY() * 32) * 128;
-                                double deltaZ = (position.getZ() * 32 - lastPosition.getZ() * 32) * 128;
+                                double deltaX = (currentLocation.getX() * 32 - lastPosition.getX() * 32) * 128;
+                                double deltaY = (currentLocation.getY() * 32 - lastPosition.getY() * 32) * 128;
+                                double deltaZ = (currentLocation.getZ() * 32 - lastPosition.getZ() * 32) * 128;
 
-                                packetQueue.add(new WrapperPlayServerEntityRelativeMove(user.getEntityId(), deltaX, deltaY, deltaZ, entityInformation.isOnGround()));
+                                packetQueue.add(new WrapperPlayServerEntityRelativeMove(user.getEntityId(),
+                                        deltaX, deltaY, deltaZ, entityInformation.isOnGround()));
 
                             }
 
                             break;
                         case POSITION_ANGLE:
-                            if (shouldSendEntityTeleport(position, lastPosition)) {
+                            if (shouldSendEntityTeleport(currentLocation, lastPosition)) {
                                 packetQueue.add(getEntityTeleport(user));
                             } else {
-                                double deltaX = (position.getX() * 32 - lastPosition.getX() * 32) * 128;
-                                double deltaY = (position.getY() * 32 - lastPosition.getY() * 32) * 128;
-                                double deltaZ = (position.getZ() * 32 - lastPosition.getZ() * 32) * 128;
+                                double deltaX = (currentLocation.getX() * 32 - lastPosition.getX() * 32) * 128;
+                                double deltaY = (currentLocation.getY() * 32 - lastPosition.getY() * 32) * 128;
+                                double deltaZ = (currentLocation.getZ() * 32 - lastPosition.getZ() * 32) * 128;
 
-                                packetQueue.add(new WrapperPlayServerEntityRelativeMoveAndRotation(user.getEntityId(), deltaX, deltaY, deltaZ, (byte) angle.getYaw(), (byte) angle.getPitch(), entityInformation.isOnGround()));
-                                packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), (byte) angle.getYaw()));
+                                packetQueue.add(new WrapperPlayServerEntityRelativeMoveAndRotation(user.getEntityId(),
+                                        deltaX, deltaY, deltaZ, (byte) currentLocation.getYaw(),
+                                        (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
+                                packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), (byte) currentLocation.getYaw()));
                             }
 
                             break;
                         case ANGLE:
-                            packetQueue.add(new WrapperPlayServerEntityRotation(user.getEntityId(), (byte) angle.getYaw(), (byte) angle.getPitch(), entityInformation.isOnGround()));
-                            packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), (byte) angle.getYaw()));
+                            packetQueue.add(new WrapperPlayServerEntityRotation(user.getEntityId(),
+                                    (byte) currentLocation.getYaw(), (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
+                            packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), (byte) currentLocation.getYaw()));
 
                             break;
                         case METADATA:
-                            // packetQueue.add(getEntityMetadata(user));
+                             packetQueue.add(getEntityMetadata(user));
 
                             break;
                         case LATENCY:
@@ -159,7 +156,7 @@ public class EntityHandler implements PacketListener {
                     for (User lUser : Graphene.USERS) {
                         if (user.getEntityId() != lUser.getEntityId()) {
                             for (PacketWrapper<?> wrapper : packetQueue) {
-                                PacketEvents.getAPI().getPlayerManager().sendPacket(lUser, wrapper);
+                                lUser.sendPacket(wrapper);
                             }
                         }
                     }
@@ -169,7 +166,7 @@ public class EntityHandler implements PacketListener {
                     entityInformation.resetLastPosition();
                 }
 
-                entityInformation.resetTotalUpdates();
+                entityInformation.resetQueuedUpdates();
             }
         }
     }
@@ -177,24 +174,23 @@ public class EntityHandler implements PacketListener {
     public static void onLogin(User user) {
         for (User lUser : Graphene.USERS) {
             if (user.getEntityId() == lUser.getEntityId()) {
-                sendEntities(user, Graphene.USERS);
+                sendEntities(user, Graphene.USERS, 2);
             } else {
-                Queue<User> users = new ConcurrentLinkedQueue<>();
+                Queue<User> users = new LinkedList<>();
                 users.add(user);
-
-                sendEntities(lUser, users);
+                sendEntities(lUser, users, 1);
             }
         }
     }
 
-    public static void sendEntities(User user, Queue<User> users) {
+    public static void sendEntities(User user, Queue<User> users, int minToOperate) {
         //Only operate if 2 or more users are online
         //if (users.size() >= 2) {
+        if (users.size() >= minToOperate) {
             for (User lUser : users) {
                 if (lUser.getEntityId() != user.getEntityId()) {
-                    Location location = lUser.getEntityInformation().getPosition();
-                    Location angle = lUser.getEntityInformation().getAngle();
-                    Location newLocation = new Location(location.getPosition(), angle.getYaw(), angle.getPitch());
+                    Location location = lUser.getEntityInformation().getLocation();
+                    Location newLocation = new Location(location.getPosition(), location.getYaw(), location.getPitch());
 
                     WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(lUser.getEntityId(), lUser.getGameProfile().getId(), newLocation);
                     //WrapperPlayServerEntityMetadata entityMetadata = getEntityMetadata(lUser);
@@ -215,7 +211,7 @@ public class EntityHandler implements PacketListener {
                     PacketEvents.getAPI().getPlayerManager().sendPacket(user, metaData2);
                 }
             }
-        //}
+        }
     }
 
     public static float wrapAngleTo180(float num) {
@@ -236,31 +232,31 @@ public class EntityHandler implements PacketListener {
 
     public static WrapperPlayServerEntityTeleport getEntityTeleport(User user) {
         EntityInformation entityInformation = user.getEntityInformation();
-        Location position = entityInformation.getPosition();
+        Location location = entityInformation.getLocation();
         boolean onGround = entityInformation.isOnGround();
-        Location angle = entityInformation.getAngle();
 
-        return new WrapperPlayServerEntityTeleport(user.getEntityId(), new Vector3d(position.getX(), position.getY(), position.getZ()), angle.getYaw(), angle.getPitch(), onGround);
+        return new WrapperPlayServerEntityTeleport(user.getEntityId(), new Vector3d(location.getX(), location.getY(), location.getZ()), location.getYaw(), location.getPitch(), onGround);
     }
 
     public static WrapperPlayServerEntityMetadata getEntityMetadata(User user) {
-        List<EntityData> information = new ArrayList<>();
         EntityInformation entityInformation = user.getEntityInformation();
         ClientSettings clientSettings = user.getClientSettings();
 
-        information.add(new EntityData(17, EntityDataTypes.BYTE, clientSettings.getDisplayedSkinParts()));
-        information.add(new EntityData(18, EntityDataTypes.BYTE, (byte) clientSettings.getMainHand().getId()));
+        EntityPose entityPose = entityInformation.isSneaking() ? EntityPose.CROUCHING : EntityPose.STANDING;
 
-        byte flagBitmask = 0;
-
-        if (entityInformation.isOnFire()) flagBitmask |= 0x01;
-        if (entityInformation.isSneaking()) flagBitmask |= 0x02;
-        if (entityInformation.isSprinting()) flagBitmask |= 0x08;
-
-        information.add(new EntityData(0, EntityDataTypes.BYTE, flagBitmask));
-        information.add(new EntityData(6, EntityDataTypes.ENTITY_POSE, entityInformation.isSneaking() ? EntityPose.CROUCHING : EntityPose.STANDING));
-
-        return new WrapperPlayServerEntityMetadata(user.getEntityId(), information);
+        EntityDataProvider playerDataProvider =
+                PlayerDataProvider.builderPlayer()
+                        .mainArm(HumanoidArm.RIGHT)
+                        .skinParts(clientSettings.getVisibleSkinSections())
+                        .handActive(true)
+                        .hand(InteractionHand.MAIN_HAND)
+                        .crouching(entityInformation.isSneaking())
+                        .sprinting(entityInformation.isSprinting())
+                        .onFire(entityInformation.isOnFire())
+                        .hasGravity(true)
+                        .invisible(entityInformation.isInvisible())
+                        .pose(entityPose).build();
+        return new WrapperPlayServerEntityMetadata(user.getEntityId(), playerDataProvider.encode());
     }
 
 }

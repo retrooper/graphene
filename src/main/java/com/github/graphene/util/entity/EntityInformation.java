@@ -7,21 +7,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class EntityInformation {
-
     private UUID uuid;
-    private double x;
-    private double y;
-    private double z;
-    private float yaw;
-    private float pitch;
+    private Location location;
     private boolean onGround;
-    private final Queue<UpdateType> totalUpdates;
+    private boolean sneaking;
+    private boolean sprinting;
+    private boolean onFire;
+    private boolean invisible;
+    private final Queue<UpdateType> queuedUpdates;
     private double lastX;
     private double lastY;
     private double lastZ;
-    private boolean onFire;
-    private boolean sneaking;
-    private boolean sprinting;
     private float health;
     private int food;
     private float saturation;
@@ -31,66 +27,39 @@ public class EntityInformation {
     private boolean groundUpdate;
 
     public EntityInformation(Location spawnLocation) {
-        x = spawnLocation.getX();
-        y = spawnLocation.getY();
-        z = spawnLocation.getZ();
+        this.location = spawnLocation;
+        lastX = location.getX();
+        lastY = location.getY();
+        lastZ = location.getZ();
 
-        lastX = spawnLocation.getX();
-        lastY = spawnLocation.getY();
-        lastZ = spawnLocation.getZ();
+        groundX = location.getX();
+        groundY = location.getY();
+        groundZ = location.getZ();
 
-        groundX = spawnLocation.getX();
-        groundY = spawnLocation.getY();
-        groundZ = spawnLocation.getZ();
-
-        yaw = spawnLocation.getYaw();
-        pitch = spawnLocation.getPitch();
-
-        onFire = false;
         health = 20.0f;
         food = 20;
         saturation = 5.0f;
 
-        sneaking = false;
-        sprinting = false;
-
         groundUpdate = true;
-        totalUpdates = new ConcurrentLinkedQueue<>();
+        queuedUpdates = new ConcurrentLinkedQueue<>();
     }
 
-    public void setPosition(double x, double y, double z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+    public Location getLocation() {
+        return location;
     }
 
-    public Location getPosition() {
-        return new Location(x, y, z, 0, 0);
+    public void setLocation(Location location) {
+        this.location = location;
     }
 
     public void resetLastPosition() {
-        this.lastX = x;
-        this.lastY = y;
-        this.lastZ = z;
+        this.lastX = 0;
+        this.lastY = 0;
+        this.lastZ = 0;
     }
 
-    public void setAngle(float yaw, float pitch) {
-        this.yaw = yaw;
-        this.pitch = pitch;
-    }
-
-    public Location getAngle() {
-        return new Location(0, 0, 0, this.yaw, this.pitch);
-    }
-
-    public void setGroundPosition() {
-        this.groundX = this.x;
-        this.groundY = this.y;
-        this.groundZ = this.z;
-    }
-
-    public Location getGroundPosition() {
-        return new Location(this.groundX, this.groundY, this.groundZ, 0, 0);
+    public Location getGroundLocation() {
+        return new Location(this.groundX, this.groundY, this.groundZ, location.getYaw(), location.getPitch());
     }
 
     public void setOnGround(boolean onGround) {
@@ -101,47 +70,55 @@ public class EntityInformation {
         return this.onGround;
     }
 
-    public Location getLastPosition() {
-        return new Location(this.lastX, this.lastY, this.lastZ, 0, 0);
-    }
-
-    public void addUpdateTotal(UpdateType updateType) {
-        if (!totalUpdates.contains(updateType)) totalUpdates.add(updateType);
-
-        if (totalUpdates.contains(UpdateType.POSITION_ANGLE))
-            totalUpdates.removeIf(type -> type == UpdateType.ANGLE || type == UpdateType.POSITION);
-    }
-
-    public Queue<UpdateType> getTotalUpdates() {
-        return totalUpdates;
-    }
-
-    public void resetTotalUpdates() {
-        totalUpdates.clear();
-    }
-
-    public boolean isOnFire() {
-        return onFire;
-    }
-
-    public void setOnFire(boolean onFire) {
-        this.onFire = onFire;
+    public boolean isSneaking() {
+        return this.sneaking;
     }
 
     public void setSneaking(boolean sneaking) {
         this.sneaking = sneaking;
     }
 
-    public boolean isSneaking() {
-        return sneaking;
+    public boolean isSprinting() {
+        return this.sprinting;
     }
 
     public void setSprinting(boolean sprinting) {
         this.sprinting = sprinting;
     }
 
-    public boolean isSprinting() {
-        return sprinting;
+    public boolean isOnFire() {
+        return this.onFire;
+    }
+
+    public void setOnFire(boolean onFire) {
+        this.onFire = onFire;
+    }
+
+    public boolean isInvisible() {
+        return this.invisible;
+    }
+
+    public void setInvisible(boolean invisible) {
+        this.invisible = invisible;
+    }
+
+    public Location getLastPosition() {
+        return new Location(this.lastX, this.lastY, this.lastZ, 0, 0);
+    }
+
+    public void queueUpdate(UpdateType updateType) {
+        if (!queuedUpdates.contains(updateType)) queuedUpdates.add(updateType);
+
+        if (queuedUpdates.contains(UpdateType.POSITION_ANGLE))
+            queuedUpdates.removeIf(type -> type == UpdateType.ANGLE || type == UpdateType.POSITION);
+    }
+
+    public Queue<UpdateType> getQueuedUpdates() {
+        return queuedUpdates;
+    }
+
+    public void resetQueuedUpdates() {
+        queuedUpdates.clear();
     }
 
     public void setFood(int food) {

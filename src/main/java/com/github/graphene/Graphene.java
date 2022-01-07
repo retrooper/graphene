@@ -6,9 +6,13 @@ import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.logic.EntityHandler;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
+import com.github.graphene.packetevents.listener.JoinListener;
+import com.github.graphene.packetevents.listener.KeepAliveListener;
+import com.github.graphene.packetevents.listener.LoginListener;
+import com.github.graphene.packetevents.listener.ServerListPingListener;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
@@ -26,12 +30,14 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Logger;
 
 public class Graphene {
     public static volatile boolean shouldTick = true;
+    public static volatile boolean shouldRunKeepAliveLoop = true;
     public static String SERVER_VERSION_NAME;
     public static int SERVER_PROTOCOL_VERSION;
     public static final int MAX_PLAYERS = 100;
@@ -39,24 +45,31 @@ public class Graphene {
     public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
-    public static int TOTAL_THREADS = (Runtime.getRuntime().availableProcessors() * 2) - 1;
-    public static final ThreadPoolExecutor WORKER_THREADS = (ThreadPoolExecutor) Executors.newFixedThreadPool(TOTAL_THREADS);
-    public static final ThreadPoolExecutor DEDICATED_TICK_THREAD = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+    public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
+    public static final ExecutorService DEDICATED_TICK_THREAD = Executors.newSingleThreadExecutor();
     public static final int PORT = 25565;
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
     private static long lastTickTime = 0L;
-    public static boolean ONLINE_MODE = false;
+    public static boolean ONLINE_MODE = true;
 
     public static void main(String[] args) throws Exception {
-        long startTime = System.currentTimeMillis();
-        assert KEY_PAIR != null;
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
         PacketEvents.getAPI().load();
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true, false);
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST, true, false);
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new JoinListener(), PacketListenerPriority.LOWEST, true, false);
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true, false);
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false, false);
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
-        Graphene.LOGGER.info("Starting Graphene server " + SERVER_VERSION_NAME);
+        Graphene.LOGGER.info("Starting Graphene server " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -80,13 +93,11 @@ public class Graphene {
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            Graphene.LOGGER.info("Starting KeepAliveScheduler on worker threads...");
-            WORKER_THREADS.execute(Graphene::runKeepAlives);
+            WORKER_THREADS.execute(Graphene::runKeepAliveLoop);
 
-            Graphene.LOGGER.info("Starting tick system...");
-            DEDICATED_TICK_THREAD.execute(Graphene::tick);
+            DEDICATED_TICK_THREAD.execute(Graphene::runTickLoop);
 
-            Graphene.LOGGER.info("Server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors() * 2) + " worker threads)");
+            Graphene.LOGGER.info("Server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
 
             // Bind and start to accept incoming connections.
             ChannelFuture f = b.bind(PORT).sync();
@@ -102,7 +113,7 @@ public class Graphene {
         PacketEvents.getAPI().terminate();
     }
 
-    public static void tick() {
+    public static void runTickLoop() {
         while (shouldTick) {
             long curTime = System.currentTimeMillis();
             long elapsedTime = curTime - lastTickTime;
@@ -116,26 +127,26 @@ public class Graphene {
         }
     }
 
-    public static void runKeepAlives() {
-        for (User user : USERS) {
-            if ((System.currentTimeMillis() - user.getKeepAliveTimer()) > 3000L) {
-                long elapsedTime = System.currentTimeMillis() - user.getLastKeepAliveTime();
+    public static void runKeepAliveLoop() {
+        while (shouldRunKeepAliveLoop) {
+            for (User user : USERS) {
+                if ((System.currentTimeMillis() - user.getKeepAliveTimer()) > 3000L) {
+                    long elapsedTime = System.currentTimeMillis() - user.getLastKeepAliveTime();
 
-                if (elapsedTime > 30000L) {
-                    user.kick("Timed out.");
-                    Graphene.LOGGER.info(user.getUsername() + " was kicked for not responding to keep alives!");
-                    break;
+                    if (elapsedTime > 30000L) {
+                        user.kick("Timed out.");
+                        Graphene.LOGGER.info(user.getUsername() + " was kicked for not responding to keep alives!");
+                        break;
+                    }
+
+                    WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive((long) Math.floor(Math.random() * Integer.MAX_VALUE));
+                    user.sendPacket(keepAlive);
+
+                    user.setKeepAliveTimer(System.currentTimeMillis());
+                    user.setSendKeepAliveTime(System.currentTimeMillis());
                 }
-
-                WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive((long) Math.floor(Math.random() * Integer.MAX_VALUE));
-                PacketEvents.getAPI().getPlayerManager().sendPacket(user, keepAlive);
-
-                user.setKeepAliveTimer(System.currentTimeMillis());
-                user.setSendKeepAliveTime(System.currentTimeMillis());
             }
         }
-
-        WORKER_THREADS.execute(Graphene::runKeepAlives);
     }
 
     public static KeyPair generateKeyPair() {

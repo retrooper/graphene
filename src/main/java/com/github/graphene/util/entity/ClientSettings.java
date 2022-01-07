@@ -1,20 +1,23 @@
 package com.github.graphene.util.entity;
 
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
+import com.github.retrooper.packetevents.protocol.player.SkinSection;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
+
+import java.util.Set;
 
 public class ClientSettings {
 
     private String locale;
     private int viewDistance;
-    private byte displayedSkinParts;
+    private Set<SkinSection> skinSections;
     private WrapperPlayClientSettings.ChatVisibility chatMode;
     private HumanoidArm mainHand;
 
-    public ClientSettings(String locale, int viewDistance, byte displayedSkinParts, WrapperPlayClientSettings.ChatVisibility chatMode, HumanoidArm mainHand) {
+    public ClientSettings(String locale, int viewDistance, Set<SkinSection> skinSections, WrapperPlayClientSettings.ChatVisibility chatMode, HumanoidArm mainHand) {
         this.locale = locale;
         this.viewDistance = viewDistance;
-        this.displayedSkinParts = displayedSkinParts;
+        this.skinSections = skinSections;
         this.chatMode = chatMode;
         this.mainHand = mainHand;
     }
@@ -22,7 +25,7 @@ public class ClientSettings {
     public ClientSettings(WrapperPlayClientSettings eventWrapper) {
         this.locale = eventWrapper.getLocale();
         this.viewDistance = eventWrapper.getViewDistance();
-        this.displayedSkinParts = eventWrapper.getVisibleSkinSectionMask();
+        this.skinSections = eventWrapper.getVisibleSkinSections();
         this.chatMode = eventWrapper.getVisibility();
         this.mainHand = eventWrapper.getMainHand();
     }
@@ -43,19 +46,19 @@ public class ClientSettings {
         this.viewDistance = viewDistance;
     }
 
-    public byte getDisplayedSkinParts() {
-        return displayedSkinParts;
+    public Set<SkinSection> getVisibleSkinSections() {
+        return skinSections;
     }
 
-    public void setDisplayedSkinParts(byte displayedSkinParts) {
-        this.displayedSkinParts = displayedSkinParts;
+    public void setVisibleSkinSections(Set<SkinSection> skinSections) {
+        this.skinSections = skinSections;
     }
 
-    public WrapperPlayClientSettings.ChatVisibility getChatMode() {
+    public WrapperPlayClientSettings.ChatVisibility getChatVisibility() {
         return chatMode;
     }
 
-    public void setChatMode(WrapperPlayClientSettings.ChatVisibility chatMode) {
+    public void setChatVisibility(WrapperPlayClientSettings.ChatVisibility chatMode) {
         this.chatMode = chatMode;
     }
 
