@@ -14,6 +14,7 @@ import com.github.retrooper.packetevents.protocol.player.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
 import com.github.retrooper.packetevents.util.UUIDUtil;
+import com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
@@ -54,7 +55,12 @@ public class LoginListener implements PacketListener {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         User user = (User) event.getPlayer();
-        if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
+
+        if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
+            WrapperHandshakingClientHandshake handshake = new WrapperHandshakingClientHandshake(event);
+            int protocolVersion = handshake.getProtocolVersion();
+        }
+        else if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
             //The client is attempting to log in.
             WrapperLoginClientLoginStart start = new WrapperLoginClientLoginStart(event);
             String username = start.getUsername();

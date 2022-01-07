@@ -2,6 +2,8 @@ package com.github.graphene.util;
 
 import com.github.graphene.Graphene;
 import com.github.graphene.user.User;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.chat.Color;
 import com.github.retrooper.packetevents.protocol.chat.component.BaseComponent;
 import com.github.retrooper.packetevents.protocol.chat.component.ClickEvent;
@@ -26,6 +28,12 @@ public class ServerUtil {
     }
 
     public static void handlePlayerLeave(User user) {
+        ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(user.getChannel());
+        PacketEvents.getAPI().getPlayerManager().CLIENT_VERSIONS.remove(ch);
+        PacketEvents.getAPI().getPlayerManager().CONNECTION_STATES.remove(ch);
+        PacketEvents.getAPI().getPlayerManager().GAME_PROFILES.remove(ch);
+        PacketEvents.getAPI().getPlayerManager().CHANNELS.remove(user.getUsername());
+        PacketEvents.getAPI().getPlayerManager().PLAYER_ATTRIBUTES.remove(user.getGameProfile().getId());
         Graphene.USERS.remove(user);
         TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).build();
         TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.left")
@@ -66,7 +74,7 @@ public class ServerUtil {
         loginMessage.prepareForSend();
 
         BaseComponent otherDisplayName = TextComponent.builder().text(user.getUsername())
-                .color(Color.BRIGHT_GREEN).build();
+                .color(Color.DARK_GREEN).build();
         WrapperPlayServerPlayerInfo.PlayerData nextData =
                 new WrapperPlayServerPlayerInfo.PlayerData(otherDisplayName, user.getGameProfile(), user.getGameMode(), 100);
         WrapperPlayServerPlayerInfo nextPlayerInfo =
