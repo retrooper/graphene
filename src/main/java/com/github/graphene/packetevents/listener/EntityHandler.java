@@ -1,6 +1,6 @@
 package com.github.graphene.packetevents.listener;
 
-import com.github.graphene.Graphene;
+import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
@@ -21,7 +21,6 @@ import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.protocol.player.SkinSection;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3d;
-import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -91,7 +90,7 @@ public class EntityHandler implements PacketListener {
                 WrapperPlayServerEntityAnimation.EntityAnimationType animation = animationWrapper.getHand() == InteractionHand.MAIN_HAND ? WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM : WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_OFFHAND;
                 WrapperPlayServerEntityAnimation entityAnimationWrapper = new WrapperPlayServerEntityAnimation(user.getEntityId(), animation);
 
-                for (User lUser : Graphene.USERS) {
+                for (User lUser : Main.USERS) {
                     if (lUser.getEntityId() != user.getEntityId()) {
                         lUser.sendPacket(entityAnimationWrapper);
                     }
@@ -101,7 +100,7 @@ public class EntityHandler implements PacketListener {
     }
 
     public static void onTick() {
-        for (User user : Graphene.USERS) {
+        for (User user : Main.USERS) {
             EntityInformation entityInformation = user.getEntityInformation();
             if (!entityInformation.getQueuedUpdates().isEmpty()) {
                 Queue<UpdateType> totalUpdates = entityInformation.getQueuedUpdates();
@@ -172,7 +171,7 @@ public class EntityHandler implements PacketListener {
                             break;
                     }
 
-                    for (User lUser : Graphene.USERS) {
+                    for (User lUser : Main.USERS) {
                         if (user.getEntityId() != lUser.getEntityId()) {
                             for (PacketWrapper<?> wrapper : packetQueue) {
                                 lUser.sendPacket(wrapper);
@@ -191,10 +190,10 @@ public class EntityHandler implements PacketListener {
     }
 
     public static void onLogin(User user) {
-        for (User p : Graphene.USERS) {
+        for (User p : Main.USERS) {
             if (user.getEntityId() == p.getEntityId()) {
                 //Spawn us for others.
-                spawnUser(user, Graphene.USERS, 2);
+                spawnUser(user, Main.USERS, 2);
             } else {
                 //Spawn the others for us.
                 //As an optimization, we set the users to have one player.

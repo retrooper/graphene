@@ -1,6 +1,6 @@
 package com.github.graphene.packetevents.manager.player;
 
-import com.github.graphene.Graphene;
+import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.player.PlayerManager;
@@ -45,7 +45,7 @@ public class PlayerManagerImpl implements PlayerManager {
     @Override
     public void sendPacketSilently(ChannelAbstract channel, ByteBufAbstract byteBuf) {
         if (channel.isOpen()) {
-            String handlerName = Graphene.ONLINE_MODE ? "encryption_handler" : "packet_prepender";
+            String handlerName = Main.ONLINE_MODE ? "encryption_handler" : "packet_prepender";
             channel.pipeline().context(handlerName).writeAndFlush(byteBuf);
         }
     }

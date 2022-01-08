@@ -1,6 +1,6 @@
 package com.github.graphene.packetevents.listener;
 
-import com.github.graphene.Graphene;
+import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.graphene.wrapper.play.server.WrapperStatusServerResponse;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -20,19 +20,19 @@ public class ServerListPingListener implements PacketListener {
             JsonObject responseComponent = new JsonObject();
 
             JsonObject versionComponent = new JsonObject();
-            versionComponent.addProperty("name", Graphene.SERVER_VERSION_NAME);
-            versionComponent.addProperty("protocol", Graphene.SERVER_PROTOCOL_VERSION);
+            versionComponent.addProperty("name", Main.SERVER_VERSION_NAME);
+            versionComponent.addProperty("protocol", Main.SERVER_PROTOCOL_VERSION);
             //Add sub component
             responseComponent.add("version", versionComponent);
 
             JsonObject playersComponent = new JsonObject();
-            playersComponent.addProperty("max", Graphene.MAX_PLAYERS);
-            playersComponent.addProperty("online", Graphene.USERS.size());
+            playersComponent.addProperty("max", Main.MAX_PLAYERS);
+            playersComponent.addProperty("online", Main.USERS.size());
             //Add sub component
             responseComponent.add("players", playersComponent);
 
             JsonObject descriptionComponent = new JsonObject();
-            descriptionComponent.addProperty("text", Graphene.SERVER_DESCRIPTION);
+            descriptionComponent.addProperty("text", Main.SERVER_DESCRIPTION);
             //Add sub component
             responseComponent.add("description", descriptionComponent);
             //We respond by sending them information about the server.

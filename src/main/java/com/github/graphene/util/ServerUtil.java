@@ -1,6 +1,6 @@
 package com.github.graphene.util;
 
-import com.github.graphene.Graphene;
+import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
@@ -21,7 +21,7 @@ public class ServerUtil {
                 WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
         outChatMessage.prepareForSend();
         //Retaining it allows us
-        for (User user : Graphene.USERS) {
+        for (User user : Main.USERS) {
             outChatMessage.getBuffer().retain();
             user.sendPacket(outChatMessage);
         }
@@ -34,7 +34,7 @@ public class ServerUtil {
         PacketEvents.getAPI().getPlayerManager().GAME_PROFILES.remove(ch);
         PacketEvents.getAPI().getPlayerManager().CHANNELS.remove(user.getUsername());
         PacketEvents.getAPI().getPlayerManager().PLAYER_ATTRIBUTES.remove(user.getGameProfile().getId());
-        Graphene.USERS.remove(user);
+        Main.USERS.remove(user);
         TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).build();
         TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.left")
                 .appendWith(withComponent).build();
@@ -49,7 +49,7 @@ public class ServerUtil {
                 new WrapperPlayServerChatMessage(translatableComponent,
                         WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
         leftMessage.prepareForSend();
-        for (User player : Graphene.USERS) {
+        for (User player : Main.USERS) {
             //Remove this user from everyone's tab list
             removePlayerInfo.getBuffer().retain();
             player.sendPacket(removePlayerInfo);
@@ -60,11 +60,11 @@ public class ServerUtil {
             leftMessage.getBuffer().retain();
             player.sendPacket(leftMessage);
         }
-        Graphene.LOGGER.info(user.getUsername() + " left the server.");
+        Main.LOGGER.info(user.getUsername() + " left the server.");
     }
 
     public static void handlePlayerJoin(User user) {
-        Graphene.USERS.add(user);
+        Main.USERS.add(user);
         ClickEvent clickEvent = new ClickEvent(ClickEvent.ClickType.SUGGEST_COMMAND, "/tell " + user.getUsername() + " Welcome!");
         TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).clickEvent(clickEvent).build();
         TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.joined")
@@ -81,7 +81,7 @@ public class ServerUtil {
                 new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, nextData);
         nextPlayerInfo.prepareForSend();
 
-        for (User player : Graphene.USERS) {
+        for (User player : Main.USERS) {
             //Send every player the login message
             loginMessage.getBuffer().retain();
             player.sendPacket(loginMessage);
@@ -99,7 +99,7 @@ public class ServerUtil {
             player.sendPacket(nextPlayerInfo);
         }
 
-        Graphene.LOGGER.info(user.getUsername() + " has joined the server.");
+        Main.LOGGER.info(user.getUsername() + " has joined the server.");
     }
 
 }

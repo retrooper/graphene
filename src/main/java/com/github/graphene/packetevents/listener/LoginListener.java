@@ -1,6 +1,6 @@
 package com.github.graphene.packetevents.listener;
 
-import com.github.graphene.Graphene;
+import com.github.graphene.Main;
 import com.github.graphene.handler.encryption.PacketDecryptionHandler;
 import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.user.User;
@@ -74,7 +74,7 @@ public class LoginListener implements PacketListener {
                 //Server ID may be empty
                 String serverID = "";
                 //Public key of the server's key pair
-                PublicKey key = Graphene.KEY_PAIR.getPublic();
+                PublicKey key = Main.KEY_PAIR.getPublic();
                 //Generate a random verify token, it has to be 4 bytes long
                 byte[] verifyToken = new byte[4];
                 new Random().nextBytes(verifyToken);
@@ -87,7 +87,7 @@ public class LoginListener implements PacketListener {
             }
             else {
                 boolean alreadyLoggedIn = false;
-                for (User lUser : Graphene.USERS) {
+                for (User lUser : Main.USERS) {
                     if (lUser.getUsername().equals(username)) {
                         alreadyLoggedIn = true;
                     }
@@ -111,9 +111,9 @@ public class LoginListener implements PacketListener {
             // Authenticate and handle player connection on our worker threads
             //Graphene.WORKER_THREADS.execute(() -> {
                 //Decrypt the verify token
-                byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Graphene.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
+                byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Main.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
                 //Private key from the server's key pair
-                PrivateKey privateKey = Graphene.KEY_PAIR.getPrivate();
+                PrivateKey privateKey = Main.KEY_PAIR.getPrivate();
                 //Decrypt the shared secret
                 byte[] sharedSecret = MinecraftEncryptionUtil.decrypt(privateKey.getAlgorithm(), privateKey, encryptionResponse.getEncryptedSharedSecret());
                 MessageDigest digest;
@@ -126,7 +126,7 @@ public class LoginListener implements PacketListener {
                 }
                 digest.update(user.getServerId().getBytes(StandardCharsets.UTF_8));
                 digest.update(sharedSecret);
-                digest.update(Graphene.KEY_PAIR.getPublic().getEncoded());
+                digest.update(Main.KEY_PAIR.getPublic().getEncoded());
                 //We generate a server id hash that will be used in our web request to mojang's session server.
                 String serverIdHash = new BigInteger(digest.digest()).toString(16);
                 //Make sure the decrypted verify token from the client is the same one we sent out earlier.
@@ -138,7 +138,7 @@ public class LoginListener implements PacketListener {
                         connection.setRequestProperty("Authorization", null);
                         connection.setRequestMethod("GET");
                         if (connection.getResponseCode() == 204) {
-                            Graphene.LOGGER.info("Failed to authenticate " + user.getUsername() + "!");
+                            Main.LOGGER.info("Failed to authenticate " + user.getUsername() + "!");
                             user.kickLogin("Failed to authenticate your connection.");
                             return;
                         }
@@ -157,7 +157,7 @@ public class LoginListener implements PacketListener {
                         String rawUUID = jsonObject.get("id").getAsString();
                         UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
                         JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
-                        for (User lUser : Graphene.USERS) {
+                        for (User lUser : Main.USERS) {
                             if (lUser.getUsername().equals(username)) {
                                 lUser.kickLogin("You logged in from another location!");
                             }
@@ -197,7 +197,7 @@ public class LoginListener implements PacketListener {
                         ex.printStackTrace();
                     }
                 } else {
-                    Graphene.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
+                    Main.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
                     user.forceDisconnect();
                 }
            // });

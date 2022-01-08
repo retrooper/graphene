@@ -1,12 +1,11 @@
 package com.github.graphene.packetevents.listener;
 
-import com.github.graphene.Graphene;
+import com.github.graphene.Main;
 import com.github.graphene.packetevents.manager.netty.ByteBufUtil;
 import com.github.graphene.user.User;
 import com.github.graphene.util.ChunkUtil;
 import com.github.graphene.util.ServerUtil;
 import com.github.graphene.util.entity.EntityInformation;
-import com.github.graphene.wrapper.play.server.WrapperPlayServerChunkData_1_18;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -16,18 +15,12 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.world.Difficulty;
 import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.protocol.world.chunk.Column;
-import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
-import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
-import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
-import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 public class JoinManager {
@@ -60,7 +53,7 @@ public class JoinManager {
     }
 
     public static void handleJoin(User user) {
-        Graphene.WORKER_THREADS.execute(() -> {
+        Main.WORKER_THREADS.execute(() -> {
             Location spawnLocation = new Location(6, 16, 6, 0.0f, 0.0f);
             user.setEntityInformation(new EntityInformation(spawnLocation));
 
@@ -72,7 +65,7 @@ public class JoinManager {
             //Send join game packet
             WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(user.getEntityId(),
                     false, user.getGameMode(), user.getPreviousGameMode(),
-                    worldNames, DIMENSION_CODEC, DIMENSION, worldNames.get(0), hashedSeed, Graphene.MAX_PLAYERS, 20, 20, false, true, false, true);
+                    worldNames, DIMENSION_CODEC, DIMENSION, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS, 20, 20, false, true, false, true);
             user.sendPacket(joinGame);
 
             //Send optional plugin message packet with our server's brand

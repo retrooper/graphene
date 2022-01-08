@@ -1,9 +1,16 @@
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.0'
 }
 
 group = 'com.github'
 version = '1.0.0'
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.github.graphene.Main'
+    }
+}
 
 repositories {
     mavenCentral()
@@ -13,6 +20,9 @@ repositories {
 
     maven { url 'https://jitpack.io' }
 
+}
+
+shadowJar {
 }
 
 dependencies {

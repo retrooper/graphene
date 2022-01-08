@@ -30,41 +30,40 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
-public class Graphene {
+public class Main {
     public static volatile boolean shouldTick = true;
     public static volatile boolean shouldRunKeepAliveLoop = true;
     public static String SERVER_VERSION_NAME;
     public static int SERVER_PROTOCOL_VERSION;
     public static final int MAX_PLAYERS = 100;
     public static final String SERVER_DESCRIPTION = "Graphene Server";
-    public static final Logger LOGGER = Logger.getLogger(Graphene.class.getSimpleName());
+    public static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
-    public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
-    public static final ExecutorService DEDICATED_TICK_THREAD = Executors.newSingleThreadExecutor();
+    public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     public static final int PORT = 25565;
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
     private static long lastTickTime = 0L;
-    public static boolean ONLINE_MODE = false;
+    public static boolean ONLINE_MODE = true;
 
     public static void main(String[] args) throws Exception {
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true, false);
+                .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST, true, false);
+                .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true, false);
+                .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().getEventManager()
-                        .registerListener(new ChatListener(), PacketListenerPriority.LOWEST, true, false);
+                        .registerListener(new ChatListener(), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false, false);
+                .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false);
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
-        Graphene.LOGGER.info("Starting Graphene server " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
+        Main.LOGGER.info("Starting Graphene server " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -88,14 +87,14 @@ public class Graphene {
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            WORKER_THREADS.execute(Graphene::runKeepAliveLoop);
+            WORKER_THREADS.execute(Main::runKeepAliveLoop);
 
-            DEDICATED_TICK_THREAD.execute(Graphene::runTickLoop);
-
-            Graphene.LOGGER.info("Server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
+            Main.LOGGER.info("Server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
 
             // Bind and start to accept incoming connections.
             ChannelFuture f = b.bind(PORT).sync();
+
+            Main.runTickLoop();
 
             // Wait until the server socket is closed.
             // In this example, this does not happen, but you can do that to gracefully
@@ -130,7 +129,7 @@ public class Graphene {
 
                     if (elapsedTime > 30000L) {
                         user.kick("Timed out.");
-                        Graphene.LOGGER.info(user.getUsername() + " was kicked for not responding to keep alives!");
+                        Main.LOGGER.info(user.getUsername() + " was kicked for not responding to keep alives!");
                         break;
                     }
 
@@ -154,7 +153,7 @@ public class Graphene {
             // If an error is thrown then shutdown because we
             // literally can't start the server without it, also
             // stops IntelliJ from asking to assert not null on keys.
-            Graphene.LOGGER.severe("Failed to generate RSA-1024 key, cannot start server!");
+            Main.LOGGER.severe("Failed to generate RSA-1024 key, cannot start server!");
             System.exit(2);
             return null;
         }
