@@ -20,6 +20,7 @@ import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.protocol.player.SkinSection;
 import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
@@ -37,11 +38,17 @@ public class EntityHandler implements PacketListener {
         assert user != null;
         EntityInformation entityInformation = user.getEntityInformation();
         if (user.getState() == ConnectionState.PLAY) {
-            if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
+            if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
+                WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
+                entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());
+                entityInformation.setLastBlockActionData(WrappedBlockState.getByString("minecraft:cobblestone"));
+                entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
+            }
+            else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
                 if (playerDigging.getAction() == WrapperPlayClientPlayerDigging.Action.FINISHED_DIGGING) {
+                    entityInformation.setLastBlockActionPosition(playerDigging.getBlockPosition());
                     entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
-                    entityInformation.setBlockBreakPosition(playerDigging.getBlockPosition());
                 }
             }
             else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
@@ -163,11 +170,18 @@ public class EntityHandler implements PacketListener {
 
                         case BLOCK_DIG:
                             //Set to air
-                            if (entityInformation.getBlockBreakPosition() != null) {
-                                WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(entityInformation.getBlockBreakPosition(), 0);
+                            if (entityInformation.getLastBlockActionPosition() != null) {
+                                WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(entityInformation.getLastBlockActionPosition(), 0);
                                 packetQueue.add(blockChange);
                             }
                             break;
+
+                        case BLOCK_PLACE:
+
+                            if (entityInformation.getLastBlockActionPosition() != null) {
+                                WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(entityInformation.getLastBlockActionPosition(), entityInformation.getLastBlockActionData().getGlobalId());
+                                packetQueue.add(blockChange);
+                            }
                     }
 
                     for (User lUser : Main.USERS) {

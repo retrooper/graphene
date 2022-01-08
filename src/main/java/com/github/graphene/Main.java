@@ -46,6 +46,11 @@ public class Main {
     public static long totalTicks = 0L;
     public static boolean ONLINE_MODE = false;
 
+
+    //Need to store items players have in hand;
+    //Entity equipment packets need to be sent showing what items users have in hand
+    //Store world blocks
+    //Store last entity positions
     public static void main(String[] args) throws Exception {
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
         PacketEvents.getAPI().load();

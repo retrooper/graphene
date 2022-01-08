@@ -1,6 +1,7 @@
 package com.github.graphene.util.entity;
 
 import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.Vector3i;
 
 import java.util.Queue;
@@ -26,7 +27,8 @@ public class EntityInformation {
     private double groundY;
     private double groundZ;
     private boolean groundUpdate;
-    private Vector3i blockBreakPosition;
+    private Vector3i lastBlockActionPosition;
+    private WrappedBlockState lastBlockActionData;
 
     public EntityInformation(Location spawnLocation) {
         this.location = spawnLocation;
@@ -60,12 +62,20 @@ public class EntityInformation {
         this.lastZ = 0;
     }
 
-    public Vector3i getBlockBreakPosition() {
-        return blockBreakPosition;
+    public Vector3i getLastBlockActionPosition() {
+        return lastBlockActionPosition;
     }
 
-    public void setBlockBreakPosition(Vector3i blockBreakPosition) {
-        this.blockBreakPosition = blockBreakPosition;
+    public void setLastBlockActionPosition(Vector3i lastBlockActionPosition) {
+        this.lastBlockActionPosition = lastBlockActionPosition;
+    }
+
+    public WrappedBlockState getLastBlockActionData() {
+        return lastBlockActionData;
+    }
+
+    public void setLastBlockActionData(WrappedBlockState lastBlockActionData) {
+        this.lastBlockActionData = lastBlockActionData;
     }
 
     public Location getGroundLocation() {

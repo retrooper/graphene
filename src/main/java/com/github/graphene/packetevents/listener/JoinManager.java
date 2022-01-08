@@ -54,7 +54,7 @@ public class JoinManager {
 
     public static void handleJoin(User user) {
         Main.WORKER_THREADS.execute(() -> {
-            Location spawnLocation = new Location(6, 16, 6, 0.0f, 0.0f);
+            Location spawnLocation = new Location(6, 1, 6, 0.0f, 0.0f);
             user.setEntityInformation(new EntityInformation(spawnLocation));
 
             List<String> worldNames = new ArrayList<>();
@@ -79,7 +79,7 @@ public class JoinManager {
             WrapperPlayServerDifficulty difficulty = new WrapperPlayServerDifficulty(Difficulty.HARD, false);
             user.sendPacket(difficulty);
             //Send player abilities
-            WrapperPlayServerPlayerAbilities abilities = new WrapperPlayServerPlayerAbilities(true, false, true, true, 0.05f, 0.1f);
+            WrapperPlayServerPlayerAbilities abilities = new WrapperPlayServerPlayerAbilities(false, false, false, false, 0.05f, 0.1f);
             user.sendPacket(abilities);
 
             ServerUtil.handlePlayerJoin(user);
@@ -97,13 +97,17 @@ public class JoinManager {
             //Actually spawn them into the world
             WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(), spawnLocation.getYaw(), spawnLocation.getPitch(), (byte) 0, 0, true);
             user.sendPacket(positionAndLook);
-            //Additionally give them a diamond sword
-            ItemStack sword = ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(ItemTypes.DIAMOND_SWORD.getMaxAmount()).build();
+            //TODO Make amount default value 1?
+            ItemStack sword = ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1).build();
             List<Enchantment> enchantments = new ArrayList<>();
             enchantments.add(Enchantment.builder().type(EnchantmentTypes.FIRE_ASPECT).level(2).build());
             sword.setEnchantments(enchantments);
-            WrapperPlayServerSetSlot setSlot = new WrapperPlayServerSetSlot(0, 0, 37, sword);
+            WrapperPlayServerSetSlot setSlot = new WrapperPlayServerSetSlot(0, 0, 36, sword);
+
+            ItemStack blocks = ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build();
+            WrapperPlayServerSetSlot setSlot2 = new WrapperPlayServerSetSlot(0, 1, 37, blocks);
             user.sendPacket(setSlot);
+            user.sendPacket(setSlot2);
 
             EntityHandler.onLogin(user);
         });

@@ -7,5 +7,6 @@ public enum UpdateType {
     ANGLE,
     METADATA,
     LATENCY,
-    BLOCK_DIG;
+    BLOCK_DIG,
+    BLOCK_PLACE
 }

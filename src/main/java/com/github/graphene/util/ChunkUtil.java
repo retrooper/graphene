@@ -31,7 +31,7 @@ public class ChunkUtil {
             for (int x = 0; x < 16; x++) {
                 for (int y = 0; y < 16; y++) {
                     for (int z = 0; z < 16; z++) {
-                        if (i == 0) {
+                        if (i == 0 && y == 0) {
                             chunkPalette.set(x, y, z, blockState.getGlobalId());
                         } else {
                             chunkPalette.set(x, y, z, 0);
