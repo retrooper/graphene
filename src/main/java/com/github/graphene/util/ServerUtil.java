@@ -17,12 +17,10 @@ import java.util.UUID;
 
 public class ServerUtil {
     public static void broadcastMessage(BaseComponent component) {
-        WrapperPlayServerChatMessage outChatMessage = new WrapperPlayServerChatMessage(component,
-                WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
-        outChatMessage.prepareForSend();
-        //Retaining it allows us
         for (User user : Main.USERS) {
-            outChatMessage.getBuffer().retain();
+            WrapperPlayServerChatMessage outChatMessage = new WrapperPlayServerChatMessage(component,
+                    WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+            outChatMessage.prepareForSend();
             user.sendPacket(outChatMessage);
         }
     }

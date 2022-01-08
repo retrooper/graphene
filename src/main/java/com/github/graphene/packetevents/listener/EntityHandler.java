@@ -103,12 +103,12 @@ public class EntityHandler implements PacketListener {
         for (User user : Main.USERS) {
             EntityInformation entityInformation = user.getEntityInformation();
             if (!entityInformation.getQueuedUpdates().isEmpty()) {
-                Queue<UpdateType> totalUpdates = entityInformation.getQueuedUpdates();
+                Queue<UpdateType> queuedUpdates = entityInformation.getQueuedUpdates();
                 Location currentLocation = entityInformation.getLocation();
                 Location lastPosition = entityInformation.getLastPosition();
                 List<PacketWrapper<?>> packetQueue = new ArrayList<>();
 
-                for (UpdateType updateType : totalUpdates) {
+                for (UpdateType updateType : queuedUpdates) {
                     switch (updateType) {
                         case POSITION:
                             if (shouldSendEntityTeleport(currentLocation, lastPosition)) {
@@ -136,10 +136,9 @@ public class EntityHandler implements PacketListener {
                                         deltaX, deltaY, deltaZ, (byte) currentLocation.getYaw(),
                                         (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
 
-                                //TODO Wasn't here packetQueue.add(new WrapperPlayServerEntityRelativeMove(user.getEntityId(),
-                                  //      deltaX, deltaY, deltaZ, entityInformation.isOnGround()));
-                                //byte headYaw =  (byte) ((int)(currentLocation.getYaw() * 256.0F / 360.0F));
-                                //packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), headYaw));
+
+                                byte headYaw =  (byte) ((int)(currentLocation.getYaw() * 256.0F / 360.0F));
+                                packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), headYaw));
                             }
 
                             break;
@@ -147,7 +146,7 @@ public class EntityHandler implements PacketListener {
                             packetQueue.add(new WrapperPlayServerEntityRotation(user.getEntityId(),
                                     (byte) currentLocation.getYaw(), (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
                             byte headYaw =  (byte) ((int)(currentLocation.getYaw() * 256.0F / 360.0F));
-                            //packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), headYaw));
+                            packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), headYaw));
 
                             break;
                         case METADATA:
@@ -180,7 +179,7 @@ public class EntityHandler implements PacketListener {
                     }
                 }
 
-                if (totalUpdates.contains(UpdateType.POSITION) || totalUpdates.contains(UpdateType.POSITION_ANGLE)) {
+                if (queuedUpdates.contains(UpdateType.POSITION) || queuedUpdates.contains(UpdateType.POSITION_ANGLE)) {
                     entityInformation.resetLastPosition();
                 }
 

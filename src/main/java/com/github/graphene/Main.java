@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class Main {
-    public static volatile boolean shouldTick = true;
+    public static boolean shouldTick = true;
     public static volatile boolean shouldRunKeepAliveLoop = true;
     public static String SERVER_VERSION_NAME;
     public static int SERVER_PROTOCOL_VERSION;
@@ -44,8 +44,7 @@ public class Main {
     public static final int PORT = 25565;
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
-    private static long lastTickTime = 0L;
-    public static boolean ONLINE_MODE = true;
+    public static boolean ONLINE_MODE = false;
 
     public static void main(String[] args) throws Exception {
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
@@ -57,7 +56,7 @@ public class Main {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().getEventManager()
-                        .registerListener(new ChatListener(), PacketListenerPriority.LOWEST, true);
+                .registerListener(new ChatListener(), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false);
         PacketEvents.getAPI().init();
@@ -108,21 +107,25 @@ public class Main {
     }
 
     public static void runTickLoop() {
+        //1000ms / 50ms = 20 ticks per second
         while (shouldTick) {
-            long curTime = System.currentTimeMillis();
-            long elapsedTime = curTime - lastTickTime;
-
-            if (elapsedTime >= 50L) {
-                totalTicks += 1;
-                lastTickTime = curTime;
-
-                EntityHandler.onTick();
+            totalTicks += 1;
+            try {
+                Thread.sleep(50L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            EntityHandler.onTick();
         }
     }
 
     public static void runKeepAliveLoop() {
         while (shouldRunKeepAliveLoop) {
+            try {
+                Thread.sleep(100L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             for (User user : USERS) {
                 if ((System.currentTimeMillis() - user.getKeepAliveTimer()) > 3000L) {
                     long elapsedTime = System.currentTimeMillis() - user.getLastKeepAliveTime();
