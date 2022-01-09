@@ -9,8 +9,6 @@ import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
-import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
-import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.world.Difficulty;
@@ -85,29 +83,27 @@ public class JoinManager {
             ServerUtil.handlePlayerJoin(user);
 
             //Send held item change
-            WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(1);
+            user.setHotbarIndex(0, ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(1).build());
+            user.setHotbarIndex(1, ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1).build());
+            user.setHotbarIndex(2, ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build());
+            user.updateHotbar();
+            WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);
             user.sendPacket(heldItemChange);
             //Send entity status
             WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(user.getEntityId(), 28);
             user.sendPacket(entityStatus);
 
-            ChunkUtil.sendChunksLine(user, 2, 2);
+            WrapperPlayServerUpdateHealth updateHealth = new WrapperPlayServerUpdateHealth(user.getEntityInformation().getHealth(),
+                    user.getEntityInformation().getFood(), user.getEntityInformation().getSaturation());
+            user.sendPacket(updateHealth);
+
+            ChunkUtil.sendChunksLine(user, 3, 1);
 
 
             //Actually spawn them into the world
             WrapperPlayServerPlayerPositionAndLook positionAndLook = new WrapperPlayServerPlayerPositionAndLook(spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(), spawnLocation.getYaw(), spawnLocation.getPitch(), (byte) 0, 0, true);
             user.sendPacket(positionAndLook);
-            //TODO Make amount default value 1?
-            ItemStack sword = ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1).build();
-            List<Enchantment> enchantments = new ArrayList<>();
-            enchantments.add(Enchantment.builder().type(EnchantmentTypes.FIRE_ASPECT).level(2).build());
-            sword.setEnchantments(enchantments);
-            WrapperPlayServerSetSlot setSlot = new WrapperPlayServerSetSlot(0, 0, 36, sword);
 
-            ItemStack blocks = ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build();
-            WrapperPlayServerSetSlot setSlot2 = new WrapperPlayServerSetSlot(0, 1, 37, blocks);
-            user.sendPacket(setSlot);
-            user.sendPacket(setSlot2);
 
             EntityHandler.onLogin(user);
         });

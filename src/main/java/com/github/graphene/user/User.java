@@ -1,5 +1,6 @@
 package com.github.graphene.user;
 
+import com.github.graphene.Main;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -8,6 +9,8 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.Color;
 import com.github.retrooper.packetevents.protocol.chat.component.BaseComponent;
 import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.GameProfile;
@@ -17,18 +20,19 @@ import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServer
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import io.netty.channel.Channel;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.UUID;
 
 public class User {
-    public static int ENTITY_COUNT = 0;
     private final Channel channel;
     private ConnectionState state;
     private ClientVersion clientVersion;
-    private final int entityID = ENTITY_COUNT++;
+    private final int entityID = Main.ENTITIES++;
     private GameMode gameMode = GameMode.SURVIVAL;
     private GameMode previousGameMode = null;
     private String serverID = "";
@@ -41,11 +45,31 @@ public class User {
     private long sendKeepAliveTime = 0L;
     private EntityInformation entityInformation;
     private ClientSettings clientSettings;
+    public final ItemStack[] inventory = new ItemStack[45];
+    public int currentSlot;
 
     public User(Channel channel, ConnectionState state) {
         this.channel = channel;
         this.state = state;
         this.clientSettings = new ClientSettings("", 0, new HashSet<>(), WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
+    }
+
+    @Nullable
+    public ItemStack getCurrentItem() {
+        return getHotbarIndex(currentSlot);
+    }
+
+    public void setCurrentItem(@Nullable ItemStack item) {
+        setHotbarIndex(currentSlot, item);
+    }
+
+    @Nullable
+    public ItemStack getHotbarIndex(int slot) {
+        return inventory[slot + 36];
+    }
+
+    public void setHotbarIndex(int slot, @Nullable ItemStack itemStack) {
+        inventory[slot + 36] = itemStack;
     }
 
     public GameProfile getGameProfile() {
@@ -207,4 +231,14 @@ public class User {
         this.clientSettings = clientSettings;
     }
 
+    public void updateHotbar() {
+        for (int i = 0; i < inventory.length; i++) {
+            ItemStack item = inventory[i];
+            if (item == null) {
+                item = ItemStack.builder().type(ItemTypes.AIR).amount(64).build();
+            }
+            WrapperPlayServerSetSlot setSlot = new WrapperPlayServerSetSlot(0, (int) (Math.random() * 1000), i, item);
+            sendPacket(setSlot);
+        }
+    }
 }

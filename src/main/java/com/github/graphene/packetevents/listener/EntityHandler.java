@@ -14,11 +14,11 @@ import com.github.retrooper.packetevents.protocol.chat.component.impl.TextCompon
 import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.PlayerDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
-import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
-import com.github.retrooper.packetevents.protocol.player.SkinSection;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.Vector3d;
@@ -226,16 +226,6 @@ public class EntityHandler implements PacketListener {
 
                     WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(onlinePlayer.getEntityId(), onlinePlayer.getGameProfile().getId(), newLocation);
                     PacketEvents.getAPI().getPlayerManager().sendPacket(user, spawnPlayer);
-                    EntityDataProvider playerDataProvider = PlayerDataProvider.builderPlayer().skinParts(SkinSection.getAllSections())
-                            .mainArm(HumanoidArm.RIGHT)
-                            .leftShoulderNBT(new NBTCompound())
-                            .rightShoulderNBT(new NBTCompound())
-                            .hand(InteractionHand.MAIN_HAND)
-                            .arrowInBodyCount(4)
-                            .onFire(true)
-                            .pose(EntityPose.STANDING)
-                            .crouching(true)
-                            .build();
 
                     //Inform us about our own entity metadata
                     WrapperPlayServerEntityMetadata metadata = getEntityMetadata(user.getEntityId(), user);
@@ -244,6 +234,20 @@ public class EntityHandler implements PacketListener {
                     user.sendPacket(metadata);
                     metadata.getBuffer().retain();
                     onlinePlayer.sendPacket(metadata);
+
+                    List<WrapperPlayServerEntityEquipment.Equipment> equipment = new ArrayList<>();
+                    ItemStack item = user.inventory[0];
+                    if (item == null) {
+                        item = ItemStack.builder().type(ItemTypes.AIR).amount(1).build();
+                    }
+                    //Allow single item constructor
+                    equipment.add(new WrapperPlayServerEntityEquipment.Equipment(WrapperPlayServerEntityEquipment.EquipmentSlot.MAINHAND, item));
+                    //Show them what we have
+                    WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(user.getEntityId(), equipment);
+                    onlinePlayer.sendPacket(equipmentPacket);
+                    //Show us what they have
+                    WrapperPlayServerEntityEquipment equipmentPacket2 = new WrapperPlayServerEntityEquipment(onlinePlayer.getEntityId(), equipment);
+                    user.sendPacket(equipmentPacket2);
                 }
             }
         }

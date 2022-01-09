@@ -1,5 +1,6 @@
 package com.github.graphene;
 
+import com.github.graphene.entity.ItemEntity;
 import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
@@ -7,9 +8,11 @@ import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
 import com.github.graphene.packetevents.listener.*;
 import com.github.graphene.user.User;
+import com.github.graphene.util.Vector2i;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -24,7 +27,9 @@ import org.jetbrains.annotations.NotNull;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -44,7 +49,10 @@ public class Main {
     public static final int PORT = 25565;
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
-    public static boolean ONLINE_MODE = false;
+    public static boolean ONLINE_MODE = true;
+    public static int ENTITIES = 0;
+    public static final Queue<ItemEntity> ITEM_ENTITIES = new ConcurrentLinkedQueue<>();
+    public static final Map<Vector2i, BaseChunk> CHUNKS = new ConcurrentHashMap<>();
 
 
     //Need to store items players have in hand;
@@ -61,9 +69,9 @@ public class Main {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new ChatListener(), PacketListenerPriority.LOWEST, true);
-        PacketEvents.getAPI().getEventManager()
                 .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false);
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new InputListener(), PacketListenerPriority.LOWEST, true);
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
@@ -127,7 +135,7 @@ public class Main {
     public static void runKeepAliveLoop() {
         while (shouldRunKeepAliveLoop) {
             try {
-                Thread.sleep(100L);
+                Thread.sleep(50L);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
