@@ -25,6 +25,7 @@ import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
+import com.github.retrooper.packetevents.util.MathUtil;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
@@ -57,8 +58,9 @@ public class EntityHandler implements PacketListener {
                 for (Vector2i c : Main.CHUNKS.keySet()) {
                     if (c.equals(chunkCoord)) {
                         Column column = Main.CHUNKS.get(c);
-                        BaseChunk firstChunk = column.getChunks()[0];
-                        firstChunk.set(blockPlacement.getBlockPosition().getX(), blockPlacement.getBlockPosition().getY() + 1,
+                        int chunkIndex = MathUtil.floor(blockPlacement.getBlockPosition().getY() / 16.0);
+                        BaseChunk chunk = column.getChunks()[chunkIndex];
+                        chunk.set(blockPlacement.getBlockPosition().getX(), blockPlacement.getBlockPosition().getY() + 1,
                                 blockPlacement.getBlockPosition().getZ(), cobbleStone.getGlobalId());
                         entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
                         break;
@@ -74,11 +76,16 @@ public class EntityHandler implements PacketListener {
                     int chunkX = playerDigging.getBlockPosition().getX() / 16;
                     int chunkZ = playerDigging.getBlockPosition().getZ() / 16;
                     Vector2i chunkCoord = new Vector2i(chunkX, chunkZ);
-                    Column column = Main.CHUNKS.get(chunkCoord);
-                    BaseChunk firstChunk = column.getChunks()[0];
-                    firstChunk.set(playerDigging.getBlockPosition().getX(), playerDigging.getBlockPosition().getY() + 1,
-                            playerDigging.getBlockPosition().getZ(), 0);
-                    entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
+                    for (Vector2i c : Main.CHUNKS.keySet()) {
+                        if (c.equals(chunkCoord)) {
+                            Column column = Main.CHUNKS.get(c);
+                            int chunkIndex = MathUtil.floor(playerDigging.getBlockPosition().getY() / 16.0);
+                            BaseChunk chunk = column.getChunks()[chunkIndex];
+                            chunk.set(playerDigging.getBlockPosition().getX(), playerDigging.getBlockPosition().getY() + 1,
+                                    playerDigging.getBlockPosition().getZ(), 0);
+                            entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
+                        }
+                    }
                 }
             }
             else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
