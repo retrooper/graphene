@@ -60,7 +60,12 @@ public class EntityHandler implements PacketListener {
                         Column column = Main.CHUNKS.get(c);
                         int chunkIndex = MathUtil.floor(blockPlacement.getBlockPosition().getY() / 16.0);
                         BaseChunk chunk = column.getChunks()[chunkIndex];
-                        chunk.set(blockPlacement.getBlockPosition().getX(), blockPlacement.getBlockPosition().getY() + 1,
+                        int y = blockPlacement.getBlockPosition().getY();
+                        for (int i = 0; i < chunkIndex; i++) {
+                            y -= 16;
+                        }
+                        System.out.println("y: " + y + ", ci: " +chunkIndex);
+                        chunk.set(blockPlacement.getBlockPosition().getX(), y,
                                 blockPlacement.getBlockPosition().getZ(), cobbleStone.getGlobalId());
                         entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
                         break;
