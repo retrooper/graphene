@@ -2,7 +2,7 @@ package com.github.graphene.packetevents.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.user.User;
-import com.github.graphene.util.Vector2i;
+import com.github.graphene.util.ChunkUtil;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.util.entity.UpdateType;
@@ -21,11 +21,7 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
-import com.github.retrooper.packetevents.protocol.world.chunk.Column;
-import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
-import com.github.retrooper.packetevents.util.MathUtil;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
@@ -49,51 +45,21 @@ public class EntityHandler implements PacketListener {
                 WrappedBlockState cobbleStone = WrappedBlockState.getByString("minecraft:cobblestone");
                 entityInformation.setLastBlockActionData(cobbleStone);
 
-                //Update the chunk cache
-                //TODO Round down
-                int chunkX = blockPlacement.getBlockPosition().getX() / 16;
-                int chunkZ = blockPlacement.getBlockPosition().getZ() / 16;
-                System.out.println("cx: " + chunkX + " cz: " + chunkZ);
-                Vector2i chunkCoord = new Vector2i(chunkX, chunkZ);
-                for (Vector2i c : Main.CHUNKS.keySet()) {
-                    if (c.equals(chunkCoord)) {
-                        Column column = Main.CHUNKS.get(c);
-                        int chunkIndex = MathUtil.floor(blockPlacement.getBlockPosition().getY() / 16.0);
-                        BaseChunk chunk = column.getChunks()[chunkIndex];
-                        int y = blockPlacement.getBlockPosition().getY();
-                        for (int i = 0; i < chunkIndex; i++) {
-                            y -= 16;
-                        }
-                        System.out.println("y: " + y + ", ci: " +chunkIndex);
-                        chunk.set(blockPlacement.getBlockPosition().getX(), y,
-                                blockPlacement.getBlockPosition().getZ(), cobbleStone.getGlobalId());
-                        entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
-                        break;
-                    }
-                }
-            }
-            else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
+                //Update the chunk cache(set to cobble stone always for now) TODO get block in hand
+                ChunkUtil.setBlockStateByPosition(blockPlacement.getBlockPosition(),
+                        cobbleStone);
+                entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
+            } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
                 if (playerDigging.getAction() == WrapperPlayClientPlayerDigging.Action.FINISHED_DIGGING) {
                     entityInformation.setLastBlockActionPosition(playerDigging.getBlockPosition());
 
-                    //Update the chunk cache
-                    int chunkX = playerDigging.getBlockPosition().getX() / 16;
-                    int chunkZ = playerDigging.getBlockPosition().getZ() / 16;
-                    Vector2i chunkCoord = new Vector2i(chunkX, chunkZ);
-                    for (Vector2i c : Main.CHUNKS.keySet()) {
-                        if (c.equals(chunkCoord)) {
-                            Column column = Main.CHUNKS.get(c);
-                            int chunkIndex = MathUtil.floor(playerDigging.getBlockPosition().getY() / 16.0);
-                            BaseChunk chunk = column.getChunks()[chunkIndex];
-                            chunk.set(playerDigging.getBlockPosition().getX(), playerDigging.getBlockPosition().getY() + 1,
-                                    playerDigging.getBlockPosition().getZ(), 0);
-                            entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
-                        }
-                    }
+                    //Update the chunk cache(set to air)
+                    ChunkUtil.setBlockStateByPosition(playerDigging.getBlockPosition(),
+                            WrappedBlockState.getByGlobalId(0));
+                    entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
                 }
-            }
-            else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
+            } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
                 user.setClientSettings(new ClientSettings(new WrapperPlayClientSettings(event)));
                 entityInformation.queueUpdate(UpdateType.METADATA);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION) {
@@ -186,7 +152,7 @@ public class EntityHandler implements PacketListener {
                                         (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
 
 
-                                byte headYaw =  (byte) ((int)(currentLocation.getYaw() * 256.0F / 360.0F));
+                                byte headYaw = (byte) ((int) (currentLocation.getYaw() * 256.0F / 360.0F));
                                 packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), headYaw));
                             }
 
@@ -194,7 +160,7 @@ public class EntityHandler implements PacketListener {
                         case ANGLE:
                             packetQueue.add(new WrapperPlayServerEntityRotation(user.getEntityId(),
                                     (byte) currentLocation.getYaw(), (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
-                            byte headYaw =  (byte) ((int)(currentLocation.getYaw() * 256.0F / 360.0F));
+                            byte headYaw = (byte) ((int) (currentLocation.getYaw() * 256.0F / 360.0F));
                             packetQueue.add(new WrapperPlayServerEntityHeadLook(user.getEntityId(), headYaw));
 
                             break;

@@ -3,17 +3,75 @@ package com.github.graphene.util;
 import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerChunkData_1_18;
+import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
 import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
 import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
+import com.github.retrooper.packetevents.util.MathUtil;
+import com.github.retrooper.packetevents.util.Vector3i;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
 public class ChunkUtil {
+    @Nullable
+    public static Column getColumnByPosition(Vector3i blockPosition) {
+        int chunkX = MathUtil.floor(blockPosition.getX() / 16.0);
+        int chunkZ = MathUtil.floor(blockPosition.getZ() / 16.0);
+        Vector2i chunkCoord = new Vector2i(chunkX, chunkZ);
+        for (Vector2i c : Main.CHUNKS.keySet()) {
+            if (c.equals(chunkCoord)) {
+                return Main.CHUNKS.get(c);
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    public static BaseChunk getChunkByPosition(Vector3i blockPosition) {
+        Column column = getColumnByPosition(blockPosition);
+        if (column != null) {
+            int chunkIndex = MathUtil.floor(blockPosition.getY() / 16.0);
+            return column.getChunks()[chunkIndex];
+        }
+        return null;
+    }
+
+    @Nullable
+    public static WrappedBlockState getBlockStateByPosition(Vector3i blockPosition) {
+        Column column = getColumnByPosition(blockPosition);
+        if (column != null) {
+            int chunkIndex = MathUtil.floor(blockPosition.getY() / 16.0);
+            BaseChunk chunk = column.getChunks()[chunkIndex];
+            int y = blockPosition.getY();
+            for (int i = 0; i < chunkIndex; i++) {
+                y -= 16;
+            }
+            //TODO Deal with far x and z
+            return chunk.get(blockPosition.getX(), y, blockPosition.getZ());
+        }
+        return null;
+    }
+
+    public static void setBlockStateByPosition(Vector3i blockPosition, WrappedBlockState blockState) {
+        //TODO Sometimes placing block on top of grass just makes it dissapear, its probably the y + 1 thing thatwe removed
+        Column column = getColumnByPosition(blockPosition);
+        if (column != null) {
+            int chunkIndex = MathUtil.floor(blockPosition.getY() / 16.0);
+            BaseChunk chunk = column.getChunks()[chunkIndex];
+            int y = blockPosition.getY();
+            for (int i = 0; i < chunkIndex; i++) {
+                y -= 16;
+            }
+            //TODO Deal with far x and z
+            chunk.set(blockPosition.getX(), y, blockPosition.getZ(), blockState.getGlobalId());
+        }
+    }
+
     public static void sendChunkColumns(User user) {
         for (Vector2i chunkCoords : Main.CHUNKS.keySet()) {
             Column column = Main.CHUNKS.get(chunkCoords);
