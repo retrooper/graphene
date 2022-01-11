@@ -8,11 +8,13 @@ import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
 import com.github.graphene.packetevents.listener.*;
 import com.github.graphene.user.User;
+import com.github.graphene.util.ChunkUtil;
 import com.github.graphene.util.Vector2i;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
+import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -46,13 +48,13 @@ public class Main {
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
     public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    public static final int PORT = 25565;
+    public static final int PORT = 25600;
     public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
     public static boolean ONLINE_MODE = true;
     public static int ENTITIES = 0;
     public static final Queue<ItemEntity> ITEM_ENTITIES = new ConcurrentLinkedQueue<>();
-    public static final Map<Vector2i, BaseChunk> CHUNKS = new ConcurrentHashMap<>();
+    public static final Map<Vector2i, Column> CHUNKS = new ConcurrentHashMap<>();
 
 
     //Need to store items players have in hand;
@@ -76,6 +78,9 @@ public class Main {
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
         Main.LOGGER.info("Starting Graphene server " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
+
+        Main.LOGGER.info("Preparing chunks...");
+        ChunkUtil.generateChunkColumns(2, 1, true);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {

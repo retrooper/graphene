@@ -97,7 +97,7 @@ public class JoinManager {
                     user.getEntityInformation().getFood(), user.getEntityInformation().getSaturation());
             user.sendPacket(updateHealth);
 
-            ChunkUtil.sendChunksLine(user, 3, 1);
+            ChunkUtil.sendChunkColumns(user);
 
 
             //Actually spawn them into the world

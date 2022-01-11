@@ -2,6 +2,7 @@ package com.github.graphene.packetevents.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.user.User;
+import com.github.graphene.util.Vector2i;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.util.entity.UpdateType;
@@ -20,6 +21,9 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
+import com.github.retrooper.packetevents.protocol.world.chunk.Column;
+import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -41,13 +45,39 @@ public class EntityHandler implements PacketListener {
             if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
                 WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
                 entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());
-                entityInformation.setLastBlockActionData(WrappedBlockState.getByString("minecraft:cobblestone"));
-                entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
+                WrappedBlockState cobbleStone = WrappedBlockState.getByString("minecraft:cobblestone");
+                entityInformation.setLastBlockActionData(cobbleStone);
+
+                //Update the chunk cache
+                //TODO Round down
+                int chunkX = blockPlacement.getBlockPosition().getX() / 16;
+                int chunkZ = blockPlacement.getBlockPosition().getZ() / 16;
+                System.out.println("cx: " + chunkX + " cz: " + chunkZ);
+                Vector2i chunkCoord = new Vector2i(chunkX, chunkZ);
+                for (Vector2i c : Main.CHUNKS.keySet()) {
+                    if (c.equals(chunkCoord)) {
+                        Column column = Main.CHUNKS.get(c);
+                        BaseChunk firstChunk = column.getChunks()[0];
+                        firstChunk.set(blockPlacement.getBlockPosition().getX(), blockPlacement.getBlockPosition().getY() + 1,
+                                blockPlacement.getBlockPosition().getZ(), cobbleStone.getGlobalId());
+                        entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
+                        break;
+                    }
+                }
             }
             else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
                 if (playerDigging.getAction() == WrapperPlayClientPlayerDigging.Action.FINISHED_DIGGING) {
                     entityInformation.setLastBlockActionPosition(playerDigging.getBlockPosition());
+
+                    //Update the chunk cache
+                    int chunkX = playerDigging.getBlockPosition().getX() / 16;
+                    int chunkZ = playerDigging.getBlockPosition().getZ() / 16;
+                    Vector2i chunkCoord = new Vector2i(chunkX, chunkZ);
+                    Column column = Main.CHUNKS.get(chunkCoord);
+                    BaseChunk firstChunk = column.getChunks()[0];
+                    firstChunk.set(playerDigging.getBlockPosition().getX(), playerDigging.getBlockPosition().getY() + 1,
+                            playerDigging.getBlockPosition().getZ(), 0);
                     entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
                 }
             }
