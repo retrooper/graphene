@@ -45,8 +45,7 @@ public class PlayerManagerImpl implements PlayerManager {
     @Override
     public void sendPacketSilently(ChannelAbstract channel, ByteBufAbstract byteBuf) {
         if (channel.isOpen()) {
-            String handlerName = Main.ONLINE_MODE ? "encryption_handler" : "packet_prepender";
-            channel.pipeline().context(handlerName).writeAndFlush(byteBuf);
+            channel.pipeline().context(PacketEvents.ENCODER_NAME).writeAndFlush(byteBuf);
         }
     }
 

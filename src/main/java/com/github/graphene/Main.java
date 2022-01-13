@@ -5,6 +5,8 @@ import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
+import com.github.graphene.handler.encryption.PacketDecryptionHandler;
+import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
 import com.github.graphene.packetevents.listener.*;
 import com.github.graphene.user.User;
@@ -95,8 +97,10 @@ public class Main {
                             PacketDecoder decoder = new PacketDecoder(user);
                             PacketEncoder encoder = new PacketEncoder(user);
                             channel.pipeline()
+                                    .addLast("decryption_handler", new PacketDecryptionHandler(null))
                                     .addLast("packet_splitter", new PacketSplitter())
                                     .addLast(PacketEvents.DECODER_NAME, decoder)
+                                    .addLast("encryption_handler", new PacketEncryptionHandler(null))
                                     .addLast("packet_prepender", new PacketPrepender())
                                     .addLast(PacketEvents.ENCODER_NAME, encoder);
                         }

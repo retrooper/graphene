@@ -12,6 +12,8 @@ import com.github.retrooper.packetevents.protocol.chat.component.impl.TextCompon
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.Equipment;
+import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
@@ -46,8 +48,7 @@ public class InputListener implements PacketListener {
                 //Pick it up for them(also destroy)
                 shortestItemEntity.pickup(user, Main.USERS);
             }
-        }
-        else if (event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE) {
+        } else if (event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE) {
             WrapperPlayClientChatMessage chatMessage = new WrapperPlayClientChatMessage(event);
             String msg = chatMessage.getMessage();
             Main.LOGGER.info(user.getUsername() + ": " + msg);
@@ -66,11 +67,11 @@ public class InputListener implements PacketListener {
 
             for (User player : Main.USERS) {
                 if (player.getEntityId() != user.getEntityId()) {
-                    List<WrapperPlayServerEntityEquipment.Equipment> equipment = new ArrayList<>();
+                    List<Equipment> equipment = new ArrayList<>();
                     if (item == null) {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(64).build();
                     }
-                    equipment.add(new WrapperPlayServerEntityEquipment.Equipment(WrapperPlayServerEntityEquipment.EquipmentSlot.MAINHAND, item));
+                    equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
                     WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(user.getEntityId(), equipment);
                     player.sendPacket(equipmentPacket);
                 }
@@ -88,8 +89,7 @@ public class InputListener implements PacketListener {
                     entity.setAmount(newAmount);
                     if (item.isEmpty()) {
                         user.setCurrentItem(null);
-                    }
-                    else {
+                    } else {
                         user.getCurrentItem().shrink(newAmount);
                     }
                     user.updateHotbar();
@@ -113,11 +113,11 @@ public class InputListener implements PacketListener {
             @Nullable ItemStack item = user.getHotbarIndex(slot);
             for (User player : Main.USERS) {
                 if (player.getEntityId() != user.getEntityId()) {
-                    List<WrapperPlayServerEntityEquipment.Equipment> equipment = new ArrayList<>();
+                    List<Equipment> equipment = new ArrayList<>();
                     if (item == null) {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(64).build();
                     }
-                    equipment.add(new WrapperPlayServerEntityEquipment.Equipment(WrapperPlayServerEntityEquipment.EquipmentSlot.MAINHAND, item));
+                    equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
                     WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(user.getEntityId(), equipment);
                     player.sendPacket(equipmentPacket);
                 }

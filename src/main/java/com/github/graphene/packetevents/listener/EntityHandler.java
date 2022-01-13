@@ -18,6 +18,8 @@ import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.Equipment;
+import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.protocol.world.Location;
@@ -243,13 +245,13 @@ public class EntityHandler implements PacketListener {
                     metadata.getBuffer().retain();
                     onlinePlayer.sendPacket(metadata);
 
-                    List<WrapperPlayServerEntityEquipment.Equipment> equipment = new ArrayList<>();
+                    List<Equipment> equipment = new ArrayList<>();
                     ItemStack item = user.inventory[0];
                     if (item == null) {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(1).build();
                     }
                     //Allow single item constructor
-                    equipment.add(new WrapperPlayServerEntityEquipment.Equipment(WrapperPlayServerEntityEquipment.EquipmentSlot.MAINHAND, item));
+                    equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
                     //Show them what we have
                     WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(user.getEntityId(), equipment);
                     onlinePlayer.sendPacket(equipmentPacket);

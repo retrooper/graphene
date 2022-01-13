@@ -181,11 +181,11 @@ public class LoginListener implements PacketListener {
                         Cipher decryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
                         decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
                         //Add the decryption handler
-                        pipeline.addBefore("packet_splitter", "decryption_handler", new PacketDecryptionHandler(decryptCipher));
+                        pipeline.replace("decryption_handler", "decryption_handler", new PacketDecryptionHandler(decryptCipher));
                         Cipher encryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
                         encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
                         //Add the encryption handler
-                        pipeline.addBefore("packet_prepender", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
+                        pipeline.replace("encryption_handler", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
                         //We now inform the client that they have successfully logged in.
                         //Note: The login success packet will be encrypted here.
                         WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getGameProfile());

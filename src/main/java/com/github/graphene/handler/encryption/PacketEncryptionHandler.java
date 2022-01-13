@@ -3,6 +3,7 @@ package com.github.graphene.handler.encryption;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import org.jetbrains.annotations.Nullable;
 
 import javax.crypto.Cipher;
 
@@ -10,7 +11,7 @@ public class PacketEncryptionHandler extends MessageToByteEncoder<ByteBuf> {
     private final Cipher cipher;
     private byte[] heap = new byte[0];
 
-    public PacketEncryptionHandler(Cipher cipher) {
+    public PacketEncryptionHandler(@Nullable Cipher cipher) {
         this.cipher = cipher;
     }
 
@@ -24,12 +25,17 @@ public class PacketEncryptionHandler extends MessageToByteEncoder<ByteBuf> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
-        int len = msg.readableBytes();
-        byte[] bytes = asBytes(msg);
-        int size = cipher.getOutputSize(len);
-        if (heap.length < size) {
-            heap = new byte[size];
+        if (cipher != null) {
+            int len = msg.readableBytes();
+            byte[] bytes = asBytes(msg);
+            int size = cipher.getOutputSize(len);
+            if (heap.length < size) {
+                heap = new byte[size];
+            }
+            out.writeBytes(heap, 0, cipher.update(bytes, 0, len, heap));
         }
-        out.writeBytes(heap, 0, cipher.update(bytes, 0, len, heap));
+        else {
+            out.writeBytes(msg);
+        }
     }
 }
