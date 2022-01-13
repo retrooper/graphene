@@ -113,7 +113,13 @@ public class InputListener implements PacketListener {
                     //Send us the damage animation packet
                     WrapperPlayServerEntityAnimation animation = new WrapperPlayServerEntityAnimation(targetEntityId,
                             WrapperPlayServerEntityAnimation.EntityAnimationType.TAKE_DAMAGE);
+                    //TODO Remove optional criticals
+                    WrapperPlayServerEntityAnimation animation2 = new WrapperPlayServerEntityAnimation(targetEntityId,
+                            WrapperPlayServerEntityAnimation.EntityAnimationType.CRITICAL_EFFECT);
+                    //TODO Velocity calculation
+                    //TODO Health system
                     user.sendPacket(animation);
+                    user.sendPacket(animation2);
                 }
             }
         }
