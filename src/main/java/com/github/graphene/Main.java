@@ -5,8 +5,6 @@ import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
-import com.github.graphene.handler.encryption.PacketDecryptionHandler;
-import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
 import com.github.graphene.packetevents.listener.*;
 import com.github.graphene.user.User;
@@ -15,14 +13,10 @@ import com.github.graphene.util.Vector2i;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -97,10 +91,12 @@ public class Main {
                             PacketDecoder decoder = new PacketDecoder(user);
                             PacketEncoder encoder = new PacketEncoder(user);
                             channel.pipeline()
-                                    .addLast("decryption_handler", new PacketDecryptionHandler(null))
+                                    .addLast("decryption_handler", new ChannelHandlerAdapter() {
+                                    })
                                     .addLast("packet_splitter", new PacketSplitter())
                                     .addLast(PacketEvents.DECODER_NAME, decoder)
-                                    .addLast("encryption_handler", new PacketEncryptionHandler(null))
+                                    .addLast("encryption_handler", new ChannelHandlerAdapter() {
+                                    })
                                     .addLast("packet_prepender", new PacketPrepender())
                                     .addLast(PacketEvents.ENCODER_NAME, encoder);
                         }

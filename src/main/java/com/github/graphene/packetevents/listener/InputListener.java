@@ -15,10 +15,8 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.Equipment;
 import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.util.Vector3d;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientHeldItemChange;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import com.github.retrooper.packetevents.wrapper.play.client.*;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityAnimation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHeldItemChange;
 import org.jetbrains.annotations.Nullable;
@@ -98,8 +96,26 @@ public class InputListener implements PacketListener {
                     itemEntity.spawn(user, Main.USERS);
                 }
             }
-
-
+        }
+        else if (event.getPacketType() == PacketType.Play.Client.INTERACT_ENTITY) {
+            WrapperPlayClientInteractEntity interactEntity = new WrapperPlayClientInteractEntity(event);
+            WrapperPlayClientInteractEntity.InteractAction action = interactEntity.getAction();
+            if (action == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
+                int targetEntityId = interactEntity.getEntityId();
+                User targetPlayer = null;
+                for (User player : Main.USERS) {
+                    if (player.getEntityId() == targetEntityId) {
+                        targetPlayer = player;
+                        break;
+                    }
+                }
+                if (targetPlayer != null) {
+                    //Send us the damage animation packet
+                    WrapperPlayServerEntityAnimation animation = new WrapperPlayServerEntityAnimation(targetEntityId,
+                            WrapperPlayServerEntityAnimation.EntityAnimationType.TAKE_DAMAGE);
+                    user.sendPacket(animation);
+                }
+            }
         }
     }
 
