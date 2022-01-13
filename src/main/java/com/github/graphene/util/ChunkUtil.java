@@ -124,7 +124,6 @@ public class ChunkUtil {
         }
         Column column = new Column(chunkX, chunkZ, true, chunks, new TileEntity[0]);
         if (store) {
-            System.out.println("store x: " + chunkX + ", z: " + chunkZ);
             Main.CHUNKS.put(new Vector2i(chunkX, chunkZ), column);
         }
         return column;
