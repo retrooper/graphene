@@ -101,7 +101,7 @@ public class LoginListener implements PacketListener {
                     JoinManager.handleJoin(user);
                 }
                 else {
-                    user.kickLogin("A user with the username " + username + " is already logged in.");
+                    user.kick("A user with the username " + username + " is already logged in.");
                 }
             }
         }
@@ -139,7 +139,7 @@ public class LoginListener implements PacketListener {
                         connection.setRequestMethod("GET");
                         if (connection.getResponseCode() == 204) {
                             Main.LOGGER.info("Failed to authenticate " + user.getUsername() + "!");
-                            user.kickLogin("Failed to authenticate your connection.");
+                            user.kick("Failed to authenticate your connection.");
                             return;
                         }
                         BufferedReader in = new BufferedReader(
@@ -159,7 +159,7 @@ public class LoginListener implements PacketListener {
                         JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
                         for (User lUser : Main.USERS) {
                             if (lUser.getUsername().equals(username)) {
-                                lUser.kickLogin("You logged in from another location!");
+                                lUser.kick("You logged in from another location!");
                             }
                         }
                         //Update our game profile, feed it with our real UUID, we've been authenticated.

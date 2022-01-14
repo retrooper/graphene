@@ -2,6 +2,7 @@ package com.github.graphene.util.entity;
 
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
+import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.util.Vector3i;
 
 import java.util.Queue;
@@ -17,9 +18,6 @@ public class EntityInformation {
     private boolean onFire;
     private boolean invisible;
     private final Queue<UpdateType> queuedUpdates;
-    private double lastX;
-    private double lastY;
-    private double lastZ;
     private float health;
     private int food;
     private float saturation;
@@ -29,12 +27,10 @@ public class EntityInformation {
     private boolean groundUpdate;
     private Vector3i lastBlockActionPosition;
     private WrappedBlockState lastBlockActionData;
+    private Vector3d deltaMovement;
 
     public EntityInformation(Location spawnLocation) {
         this.location = spawnLocation;
-        lastX = location.getX();
-        lastY = location.getY();
-        lastZ = location.getZ();
 
         groundX = location.getX();
         groundY = location.getY();
@@ -56,10 +52,19 @@ public class EntityInformation {
         this.location = location;
     }
 
-    public void resetLastPosition() {
-        this.lastX = 0;
-        this.lastY = 0;
-        this.lastZ = 0;
+
+    public Vector3d getDeltaMovement() {
+        return deltaMovement;
+    }
+
+    public void setDeltaMovement(Vector3d deltaMovement) {
+        this.deltaMovement = deltaMovement;
+    }
+
+    public void resetDeltaMovement() {
+        deltaMovement.setX(0.0);
+        deltaMovement.setY(0.0);
+        deltaMovement.setZ(0.0);
     }
 
     public Vector3i getLastBlockActionPosition() {
@@ -120,10 +125,6 @@ public class EntityInformation {
 
     public void setInvisible(boolean invisible) {
         this.invisible = invisible;
-    }
-
-    public Location getLastPosition() {
-        return new Location(this.lastX, this.lastY, this.lastZ, 0, 0);
     }
 
     public void queueUpdate(UpdateType updateType) {

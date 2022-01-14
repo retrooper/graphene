@@ -171,16 +171,38 @@ public class User {
         channel.close();
     }
 
-    public void kickLogin(String reason) {
-        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build().toString());
+    private void kickLogin(BaseComponent component) {
+        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(component.toString());
         PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
         forceDisconnect();
     }
 
-    public void kick(String reason) {
-        WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(TextComponent.builder().text(reason).color(Color.DARK_RED).build());
+    private void kickPlay(BaseComponent component) {
+        WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(component);
         PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
         forceDisconnect();
+    }
+
+    public void kick(BaseComponent component) {
+        ConnectionState state = PacketEvents.getAPI().getPlayerManager().getConnectionState(this);
+        switch (state) {
+            case HANDSHAKING:
+            case STATUS:
+                forceDisconnect();
+                break;
+            case LOGIN:
+                kickLogin(component);
+                break;
+            case PLAY:
+                kickPlay(component);
+                break;
+
+        }
+    }
+
+    public void kick(String reason) {
+        BaseComponent component = TextComponent.builder().text(reason).color(Color.DARK_RED).build();
+        kick(component);
     }
 
     public long getLastKeepAliveTime() {

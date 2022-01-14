@@ -1,6 +1,5 @@
 package com.github.graphene.packetevents.manager.player;
 
-import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.player.PlayerManager;
@@ -14,7 +13,7 @@ public class PlayerManagerImpl implements PlayerManager {
     @Override
     public int getPing(@NotNull Object player) {
         User user = (User) player;
-        return (int)user.getLatency();
+        return (int) user.getLatency();
     }
 
     //TODO See if we can still put it in the map
@@ -51,7 +50,7 @@ public class PlayerManagerImpl implements PlayerManager {
 
     @Override
     public GameProfile getGameProfile(@NotNull Object player) {
-        ChannelAbstract channel = PacketEvents.getAPI().getNettyManager().wrapChannel(((User) player).getChannel());
+        ChannelAbstract channel = getChannel(player);
         return getGameProfile(channel);
     }
 
