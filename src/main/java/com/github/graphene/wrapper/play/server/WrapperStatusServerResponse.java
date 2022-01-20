@@ -1,8 +1,8 @@
 package com.github.graphene.wrapper.play.server;
 
 import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.chat.component.serializer.ComponentSerializer;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.util.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.google.gson.JsonObject;
 
@@ -29,7 +29,7 @@ public class WrapperStatusServerResponse extends PacketWrapper<WrapperStatusServ
     public void readData() {
         componentJson = readString();
         if (HANDLE_JSON) {
-            component = ComponentSerializer.GSON.fromJson(componentJson, JsonObject.class);
+            component = AdventureSerializer.GSON.serializer().fromJson(componentJson, JsonObject.class);
         }
     }
 

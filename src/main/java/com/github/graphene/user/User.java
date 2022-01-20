@@ -6,9 +6,6 @@ import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.chat.Color;
-import com.github.retrooper.packetevents.protocol.chat.component.BaseComponent;
-import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
@@ -22,6 +19,8 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCh
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetSlot;
 import io.netty.channel.Channel;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
@@ -157,33 +156,34 @@ public class User {
         PacketEvents.getAPI().getPlayerManager().sendPacket(ch, wrapper);
     }
 
-    public void sendMessage(BaseComponent component) {
+    public void sendMessage(Component component) {
         WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(component, WrapperPlayServerChatMessage.ChatPosition.CHAT,
                 new UUID(0L, 0L));
         sendPacket(chatMessage);
     }
 
     public void sendMessage(String message) {
-        sendMessage(TextComponent.builder().text(message).build());
+        //TODO Some improvements
+        sendMessage(Component.text(message).color(NamedTextColor.WHITE).asComponent());
     }
 
     public void forceDisconnect() {
         channel.close();
     }
 
-    private void kickLogin(BaseComponent component) {
+    private void kickLogin(Component component) {
         WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(component.toString());
         PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
         forceDisconnect();
     }
 
-    private void kickPlay(BaseComponent component) {
+    private void kickPlay(Component component) {
         WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(component);
         PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
         forceDisconnect();
     }
 
-    public void kick(BaseComponent component) {
+    public void kick(Component component) {
         ConnectionState state = PacketEvents.getAPI().getPlayerManager().getConnectionState(this);
         switch (state) {
             case HANDSHAKING:
@@ -201,7 +201,7 @@ public class User {
     }
 
     public void kick(String reason) {
-        BaseComponent component = TextComponent.builder().text(reason).color(Color.DARK_RED).build();
+        Component component = Component.text(reason).color(NamedTextColor.DARK_RED).asComponent();
         kick(component);
     }
 

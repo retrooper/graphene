@@ -7,8 +7,6 @@ import com.github.graphene.util.ServerUtil;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.chat.Color;
-import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
@@ -19,6 +17,8 @@ import com.github.retrooper.packetevents.wrapper.play.client.*;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityAnimation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHeldItemChange;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -51,10 +51,8 @@ public class InputListener implements PacketListener {
             String msg = chatMessage.getMessage();
             Main.LOGGER.info(user.getUsername() + ": " + msg);
             //Prefix the display message with the player's name in green, and then a colon and their message in white
-            TextComponent displayComponent = TextComponent.builder()
-                    .text(user.getUsername()).color(Color.BRIGHT_GREEN).build();
-            TextComponent childComponent = TextComponent.builder().text(": " + msg).color(Color.WHITE).build();
-            displayComponent.getChildren().add(childComponent);
+            Component displayComponent = Component.text(user.getUsername()).color(NamedTextColor.GREEN)
+                    .append(Component.text(": " + msg).color(NamedTextColor.WHITE).asComponent()).asComponent();
             //Send it to everyone(including the sender)
             ServerUtil.broadcastMessage(displayComponent);
         } else if (event.getPacketType() == PacketType.Play.Client.HELD_ITEM_CHANGE) {
@@ -96,8 +94,7 @@ public class InputListener implements PacketListener {
                     itemEntity.spawn(user, Main.USERS);
                 }
             }
-        }
-        else if (event.getPacketType() == PacketType.Play.Client.INTERACT_ENTITY) {
+        } else if (event.getPacketType() == PacketType.Play.Client.INTERACT_ENTITY) {
             WrapperPlayClientInteractEntity interactEntity = new WrapperPlayClientInteractEntity(event);
             WrapperPlayClientInteractEntity.InteractAction action = interactEntity.getAction();
             if (action == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {

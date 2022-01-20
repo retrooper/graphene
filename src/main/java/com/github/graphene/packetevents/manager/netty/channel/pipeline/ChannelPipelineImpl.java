@@ -110,7 +110,7 @@ public class ChannelPipelineImpl implements ChannelPipelineAbstract {
     }
 
     @Override
-    public ChannelPipelineAbstract fireChannelRead(Object msg) {
+    public ChannelPipelineAbstract fireChannelRead0(Object msg) {
         return new ChannelPipelineImpl(pipeline.fireChannelRead(msg));
     }
 

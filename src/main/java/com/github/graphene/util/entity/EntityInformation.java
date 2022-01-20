@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class EntityInformation {
     private UUID uuid;
     private Location location;
+    private Location tickLocation;
     private boolean onGround;
     private boolean sneaking;
     private boolean sprinting;
@@ -27,11 +28,10 @@ public class EntityInformation {
     private boolean groundUpdate;
     private Vector3i lastBlockActionPosition;
     private WrappedBlockState lastBlockActionData;
-    private Vector3d deltaMovement;
 
     public EntityInformation(Location spawnLocation) {
         this.location = spawnLocation;
-
+        this.tickLocation = spawnLocation;
         groundX = location.getX();
         groundY = location.getY();
         groundZ = location.getZ();
@@ -52,20 +52,14 @@ public class EntityInformation {
         this.location = location;
     }
 
-
-    public Vector3d getDeltaMovement() {
-        return deltaMovement;
+    public Location getTickLocation() {
+        return tickLocation;
     }
 
-    public void setDeltaMovement(Vector3d deltaMovement) {
-        this.deltaMovement = deltaMovement;
+    public void setTickLocation(Location tickLocation) {
+        this.tickLocation = tickLocation;
     }
 
-    public void resetDeltaMovement() {
-        deltaMovement.setX(0.0);
-        deltaMovement.setY(0.0);
-        deltaMovement.setZ(0.0);
-    }
 
     public Vector3i getLastBlockActionPosition() {
         return lastBlockActionPosition;

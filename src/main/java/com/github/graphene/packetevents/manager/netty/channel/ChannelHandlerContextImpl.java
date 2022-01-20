@@ -73,7 +73,7 @@ public class ChannelHandlerContextImpl implements ChannelHandlerContextAbstract 
     }
 
     @Override
-    public ChannelHandlerContextAbstract fireChannelRead(Object msg) {
+    public ChannelHandlerContextAbstract fireChannelRead0(Object msg) {
         return new ChannelHandlerContextImpl(ctx.fireChannelRead(msg));
     }
 
@@ -108,18 +108,12 @@ public class ChannelHandlerContextImpl implements ChannelHandlerContextAbstract 
     }
 
     @Override
-    public void write(Object msg) {
-        if (msg instanceof ByteBufAbstract) {
-            msg = ((ByteBufAbstract) msg).rawByteBuf();
-        }
+    public void write0(Object msg) {
         ctx.write(msg);
     }
 
     @Override
-    public void writeAndFlush(Object msg) {
-        if (msg instanceof ByteBufAbstract) {
-            msg = ((ByteBufAbstract) msg).rawByteBuf();
-        }
+    public void writeAndFlush0(Object msg) {
         ctx.writeAndFlush(msg);
     }
 }

@@ -1,5 +1,6 @@
 package com.github.graphene.packetevents.manager.server;
 
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerManager;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
@@ -13,23 +14,14 @@ public class ServerManagerImpl implements ServerManager {
         return ServerVersion.getLatest();
     }
 
+
     @Override
     public void receivePacket(ChannelAbstract channel, ByteBufAbstract byteBuf) {
-
+        //TODO impl
     }
 
     @Override
-    public void receivePacket(Object player, ByteBufAbstract byteBuf) {
-
-    }
-
-    @Override
-    public void receivePacket(Object player, PacketWrapper<?> wrapper) {
-
-    }
-
-    @Override
-    public void receivePacket(ChannelAbstract channel, PacketWrapper<?> wrapper) {
-
+    public void receivePacketSilently(ChannelAbstract channel, ByteBufAbstract byteBuf) {
+        channel.pipeline().context(PacketEvents.DECODER_NAME).fireChannelRead(byteBuf);
     }
 }

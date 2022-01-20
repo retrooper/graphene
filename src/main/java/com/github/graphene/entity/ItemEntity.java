@@ -2,8 +2,6 @@ package com.github.graphene.entity;
 
 import com.github.graphene.Main;
 import com.github.graphene.user.User;
-import com.github.retrooper.packetevents.protocol.chat.Color;
-import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
@@ -11,6 +9,9 @@ import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.Style;
 
 import java.util.List;
 import java.util.Optional;
@@ -90,7 +91,7 @@ public class ItemEntity {
                     1,
                     Optional.of(new Vector3d(0, -4, 0)));
             List<EntityData> data = EntityDataProvider.builderEntity()
-                    .customName(TextComponent.builder().text("siuu").color(Color.RED).build())
+                    .customName(Component.text("nice item").color(NamedTextColor.GOLD).asComponent())
                     .customNameVisible(true).build().encode();
             data.add(new EntityData(8, EntityDataTypes.ITEMSTACK, item));
             WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId, data);

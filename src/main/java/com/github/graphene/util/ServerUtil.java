@@ -4,19 +4,17 @@ import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
-import com.github.retrooper.packetevents.protocol.chat.Color;
-import com.github.retrooper.packetevents.protocol.chat.component.BaseComponent;
-import com.github.retrooper.packetevents.protocol.chat.component.ClickEvent;
-import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
-import com.github.retrooper.packetevents.protocol.chat.component.impl.TranslatableComponent;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.UUID;
 
 public class ServerUtil {
-    public static void broadcastMessage(BaseComponent component) {
+    public static void broadcastMessage(Component component) {
         for (User user : Main.USERS) {
             WrapperPlayServerChatMessage outChatMessage = new WrapperPlayServerChatMessage(component,
                     WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
@@ -33,9 +31,9 @@ public class ServerUtil {
         PacketEvents.getAPI().getPlayerManager().CHANNELS.remove(user.getUsername());
         PacketEvents.getAPI().getPlayerManager().PLAYER_ATTRIBUTES.remove(user.getGameProfile().getId());
         Main.USERS.remove(user);
-        TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).build();
-        TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.left")
-                .appendWith(withComponent).build();
+        //TODO If it doesnt work, make sub component yellow too
+        Component translatableComponent = Component.translatable("multiplayer.player.left").color(NamedTextColor.YELLOW)
+                .append(Component.text(user.getUsername()).insertion(user.getUsername()).asComponent()).asComponent();
         WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(null, user.getGameProfile(), null, -1);
         WrapperPlayServerPlayerInfo removePlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, data);
         removePlayerInfo.prepareForSend();
@@ -63,16 +61,17 @@ public class ServerUtil {
 
     public static void handlePlayerJoin(User user) {
         Main.USERS.add(user);
-        ClickEvent clickEvent = new ClickEvent(ClickEvent.ClickType.SUGGEST_COMMAND, "/tell " + user.getUsername() + " Welcome!");
-        TextComponent withComponent = TextComponent.builder().color(Color.YELLOW).text(user.getUsername()).insertion(user.getUsername()).clickEvent(clickEvent).build();
-        TranslatableComponent translatableComponent = TranslatableComponent.builder().color(Color.YELLOW).translate("multiplayer.player.joined")
-                .appendWith(withComponent).build();
+        ClickEvent clickEvent = ClickEvent.suggestCommand("/tell " + user.getUsername() + " Welcome!");
+        Component translatableComponent = Component.translatable("multiplayer.player.joined")
+                .color(NamedTextColor.YELLOW)
+                .append(Component.text(user.getUsername()).insertion(user.getUsername())
+                        .color(NamedTextColor.YELLOW)
+                        .clickEvent(clickEvent).asComponent()).asComponent();
 
         WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent, WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
         loginMessage.prepareForSend();
 
-        BaseComponent otherDisplayName = TextComponent.builder().text(user.getUsername())
-                .color(Color.DARK_GREEN).build();
+        Component otherDisplayName = Component.text(user.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
         WrapperPlayServerPlayerInfo.PlayerData nextData =
                 new WrapperPlayServerPlayerInfo.PlayerData(otherDisplayName, user.getGameProfile(), user.getGameMode(), 100);
         WrapperPlayServerPlayerInfo nextPlayerInfo =
@@ -85,8 +84,7 @@ public class ServerUtil {
             player.sendPacket(loginMessage);
 
             //Add this joining user to everyone's tab list
-            BaseComponent displayName = TextComponent.builder().text(player.getUsername())
-                    .color(Color.DARK_GREEN).build();
+            Component displayName = Component.text(player.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
             WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(displayName,
                     player.getGameProfile(), player.getGameMode(), 100);
             WrapperPlayServerPlayerInfo playerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, data);

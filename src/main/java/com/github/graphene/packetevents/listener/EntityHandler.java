@@ -10,8 +10,6 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.chat.Color;
-import com.github.retrooper.packetevents.protocol.chat.component.impl.TextComponent;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.PlayerDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
@@ -28,6 +26,8 @@ import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -67,9 +67,7 @@ public class EntityHandler implements PacketListener {
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION) {
                 WrapperPlayClientPlayerPosition positionWrapper = new WrapperPlayClientPlayerPosition(event);
                 Vector3d position = positionWrapper.getPosition();
-                Vector3d lastPosition = entityInformation.getLocation().getPosition();
-                //TODO Do on tick update entityInformation.getLocation().setPosition(position);
-                entityInformation.setDeltaMovement(position.subtract(lastPosition));
+                entityInformation.getLocation().setPosition(position);
                 entityInformation.setOnGround(positionWrapper.isOnGround());
 
                 entityInformation.queueUpdate(UpdateType.POSITION);
@@ -78,13 +76,7 @@ public class EntityHandler implements PacketListener {
                 WrapperPlayClientPlayerPositionAndRotation positionRotationWrapper = new WrapperPlayClientPlayerPositionAndRotation(event);
                 Location location = new Location(positionRotationWrapper.getPosition(),
                         positionRotationWrapper.getYaw(), positionRotationWrapper.getPitch());
-
-                Vector3d position = positionRotationWrapper.getPosition();
-                Vector3d lastPosition = entityInformation.getLocation().getPosition();
-                entityInformation.setDeltaMovement(position.subtract(lastPosition));
-
-                entityInformation.getLocation().setYaw(positionRotationWrapper.getYaw());
-                entityInformation.getLocation().setPitch(positionRotationWrapper.getPitch());
+                entityInformation.setLocation(location);
 
                 entityInformation.setOnGround(positionRotationWrapper.isOnGround());
                 entityInformation.queueUpdate(UpdateType.POSITION_ANGLE);
@@ -131,33 +123,37 @@ public class EntityHandler implements PacketListener {
             EntityInformation entityInformation = user.getEntityInformation();
             if (!entityInformation.getQueuedUpdates().isEmpty()) {
                 Queue<UpdateType> queuedUpdates = entityInformation.getQueuedUpdates();
-                Location currentLocation = entityInformation.getLocation();
                 List<PacketWrapper<?>> packetQueue = new ArrayList<>();
-
+                Location currentLocation = entityInformation.getLocation();
+                Vector3d deltaPosition = currentLocation.getPosition().subtract(entityInformation.getTickLocation().getPosition());
                 for (UpdateType updateType : queuedUpdates) {
-                    Vector3d deltaMovement = entityInformation.getDeltaMovement();
                     switch (updateType) {
                         case POSITION:
-                            if (shouldSendEntityTeleport(deltaMovement)) {
-                                packetQueue.add(getEntityTeleport(user));
-                            } else {
-                                double deltaX = deltaMovement.getX();
-                                double deltaY = deltaMovement.getY();
-                                double deltaZ = deltaMovement.getZ();
+                            System.out.println("delta movement by user " + user.getUsername() + " : " + deltaPosition.toString());
+                            if (!deltaPosition.equals(Vector3d.zero())) {
+                                if (shouldSendEntityTeleport(deltaPosition)) {
+                                    packetQueue.add(getEntityTeleport(user));
+                                } else {
+                                    double deltaX = deltaPosition.getX();
+                                    double deltaY = deltaPosition.getY();
+                                    double deltaZ = deltaPosition.getZ();
+                                    System.out.println("dx: " + deltaX);
 
-                                packetQueue.add(new WrapperPlayServerEntityRelativeMove(user.getEntityId(),
-                                        deltaX, deltaY, deltaZ, entityInformation.isOnGround()));
+                                    packetQueue.add(new WrapperPlayServerEntityRelativeMove(user.getEntityId(),
+                                            deltaX, deltaY, deltaZ, entityInformation.isOnGround()));
+
+                                }
 
                             }
-
                             break;
                         case POSITION_ANGLE:
-                            if (shouldSendEntityTeleport(deltaMovement)) {
+                            //System.out.println("dmA: " + deltaPosition.toString());
+                            if (shouldSendEntityTeleport(deltaPosition)) {
                                 packetQueue.add(getEntityTeleport(user));
                             } else {
-                                double deltaX = deltaMovement.getX();
-                                double deltaY = deltaMovement.getY();
-                                double deltaZ = deltaMovement.getZ();
+                                double deltaX = deltaPosition.getX();
+                                double deltaY = deltaPosition.getY();
+                                double deltaZ = deltaPosition.getZ();
 
                                 packetQueue.add(new WrapperPlayServerEntityRelativeMoveAndRotation(user.getEntityId(),
                                         deltaX, deltaY, deltaZ, (byte) currentLocation.getYaw(),
@@ -214,9 +210,9 @@ public class EntityHandler implements PacketListener {
                 }
 
                 if (queuedUpdates.contains(UpdateType.POSITION) || queuedUpdates.contains(UpdateType.POSITION_ANGLE)) {
-                    entityInformation.resetDeltaMovement();
+                    //entityInformation.setTickLocation(new Location(0, 0, 0, 0, 0));
+                    entityInformation.setTickLocation(entityInformation.getLocation());
                 }
-
                 entityInformation.resetQueuedUpdates();
             }
         }
@@ -286,7 +282,8 @@ public class EntityHandler implements PacketListener {
     }
 
     public static boolean shouldSendEntityTeleport(Vector3d deltaMovement) {
-        return Math.abs(deltaMovement.getX()) > 8 || Math.abs(deltaMovement.getY()) > 8 || Math.abs(deltaMovement.getZ()) > 8;
+        //return Math.abs(deltaMovement.getX()) > 8 || Math.abs(deltaMovement.getY()) > 8 || Math.abs(deltaMovement.getZ()) > 8;
+        return true;
     }
 
     public static WrapperPlayServerEntityTeleport getEntityTeleport(User user) {
@@ -294,7 +291,7 @@ public class EntityHandler implements PacketListener {
         Location location = entityInformation.getLocation();
         boolean onGround = entityInformation.isOnGround();
 
-        return new WrapperPlayServerEntityTeleport(user.getEntityId(), new Vector3d(location.getX(), location.getY(), location.getZ()), location.getYaw(), location.getPitch(), onGround);
+        return new WrapperPlayServerEntityTeleport(user.getEntityId(), location, onGround);
     }
 
     public static WrapperPlayServerEntityMetadata getEntityMetadata(int targetEntityId, User user) {
@@ -314,7 +311,7 @@ public class EntityHandler implements PacketListener {
                         .onFire(entityInformation.isOnFire())
                         .hasGravity(true)
                         .invisible(entityInformation.isInvisible())
-                        .customName(TextComponent.builder().text("noice").color(Color.RED).build())
+                        .customName(Component.text("noice").color(NamedTextColor.RED).asComponent())
                         .customNameVisible(true)
                         .pose(entityPose).build();
         return new WrapperPlayServerEntityMetadata(targetEntityId, playerDataProvider.encode());
