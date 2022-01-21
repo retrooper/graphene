@@ -4,11 +4,14 @@ import com.github.graphene.Main;
 import com.github.graphene.user.User;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
+import com.github.retrooper.packetevents.util.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.UUID;
@@ -33,7 +36,10 @@ public class ServerUtil {
         Main.USERS.remove(user);
         //TODO If it doesnt work, make sub component yellow too
         Component translatableComponent = Component.translatable("multiplayer.player.left").color(NamedTextColor.YELLOW)
-                .append(Component.text(user.getUsername()).insertion(user.getUsername()).asComponent()).asComponent();
+                .args(Component
+                        .text(user.getUsername())
+                        .asComponent())
+                .asComponent();
         WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(null, user.getGameProfile(), null, -1);
         WrapperPlayServerPlayerInfo removePlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, data);
         removePlayerInfo.prepareForSend();
@@ -61,14 +67,23 @@ public class ServerUtil {
 
     public static void handlePlayerJoin(User user) {
         Main.USERS.add(user);
+        HoverEvent<HoverEvent.ShowEntity> hoverEvent = HoverEvent.hoverEvent(HoverEvent.Action.SHOW_ENTITY,
+                HoverEvent.ShowEntity.of(Key.key("minecraft:player"),
+                        user.getGameProfile().getId(),
+                        Component.text(user.getUsername())));
         ClickEvent clickEvent = ClickEvent.suggestCommand("/tell " + user.getUsername() + " Welcome!");
         Component translatableComponent = Component.translatable("multiplayer.player.joined")
                 .color(NamedTextColor.YELLOW)
-                .append(Component.text(user.getUsername()).insertion(user.getUsername())
-                        .color(NamedTextColor.YELLOW)
-                        .clickEvent(clickEvent).asComponent()).asComponent();
+                .args(Component
+                        .text(user.getUsername())
+                        .hoverEvent(hoverEvent)
+                        .clickEvent(clickEvent).asComponent())
+                .asComponent();
 
-        WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent, WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+        System.out.println("json: " + AdventureSerializer.toJson(translatableComponent));
+
+        WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent,
+                WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
         loginMessage.prepareForSend();
 
         Component otherDisplayName = Component.text(user.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
