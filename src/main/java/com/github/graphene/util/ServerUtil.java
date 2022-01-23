@@ -80,7 +80,6 @@ public class ServerUtil {
                         .clickEvent(clickEvent).asComponent())
                 .asComponent();
 
-        System.out.println("json: " + AdventureSerializer.toJson(translatableComponent));
 
         WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent,
                 WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));

@@ -10,10 +10,12 @@ import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.protocol.player.Equipment;
 import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerAcknowledgePlayerDigging;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityAnimation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEquipment;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHeldItemChange;
@@ -74,13 +76,13 @@ public class InputListener implements PacketListener {
             }
         } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
             WrapperPlayClientPlayerDigging digging = new WrapperPlayClientPlayerDigging(event);
-            WrapperPlayClientPlayerDigging.Action action = digging.getAction();
-            if (action == WrapperPlayClientPlayerDigging.Action.DROP_ITEM ||
-                    action == WrapperPlayClientPlayerDigging.Action.DROP_ITEM_STACK) {
+            DiggingAction action = digging.getAction();
+            if (action == DiggingAction.DROP_ITEM ||
+                    action == DiggingAction.DROP_ITEM_STACK) {
                 ItemStack item = user.getCurrentItem();
                 //TODO Remove debug
                 if (item != null) {
-                    int newAmount = action == WrapperPlayClientPlayerDigging.Action.DROP_ITEM ? 1 : item.getAmount();
+                    int newAmount = action == DiggingAction.DROP_ITEM ? 1 : item.getAmount();
                     ItemStack entity = item.copy();
                     entity.setAmount(newAmount);
                     if (item.isEmpty()) {
@@ -93,6 +95,12 @@ public class InputListener implements PacketListener {
                             entity);
                     itemEntity.spawn(user, Main.USERS);
                 }
+            } else if (action == DiggingAction.FINISHED_DIGGING) {
+                //Send this always if in creative
+                int blockID = 0;
+                WrapperPlayServerAcknowledgePlayerDigging diggingResponse =
+                        new WrapperPlayServerAcknowledgePlayerDigging(action, true, digging.getBlockPosition(), blockID);
+                user.sendPacket(diggingResponse);
             }
         } else if (event.getPacketType() == PacketType.Play.Client.INTERACT_ENTITY) {
             WrapperPlayClientInteractEntity interactEntity = new WrapperPlayClientInteractEntity(event);

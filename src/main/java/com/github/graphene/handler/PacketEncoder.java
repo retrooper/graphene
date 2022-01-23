@@ -22,24 +22,19 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
         this.user = user;
     }
 
-    public void handle(ChannelHandlerContextAbstract ctx, ByteBufAbstract transformedBuf, ByteBuf output) {
-        try {
-            int firstReaderIndex = transformedBuf.readerIndex();
-            PacketSendEvent packetSendEvent = new PacketSendEvent(ctx.channel(), user, transformedBuf);
-            int readerIndex = transformedBuf.readerIndex();
-            PacketEvents.getAPI().getEventManager().callEvent(packetSendEvent, () -> transformedBuf.readerIndex(readerIndex));
-            if (!packetSendEvent.isCancelled()) {
-                if (packetSendEvent.getLastUsedWrapper() != null) {
-                    packetSendEvent.getByteBuf().clear();
-                    packetSendEvent.getLastUsedWrapper().writeVarInt(packetSendEvent.getPacketId());
-                    packetSendEvent.getLastUsedWrapper().writeData();
-                }
-                transformedBuf.readerIndex(firstReaderIndex);
-                output.writeBytes((ByteBuf) transformedBuf.retain().rawByteBuf());
-                postTasks.addAll(packetSendEvent.getPostTasks());
+    public void handle(ChannelHandlerContextAbstract ctx, ByteBufAbstract byteBuf) {
+        int firstReaderIndex = byteBuf.readerIndex();
+        PacketSendEvent packetSendEvent = new PacketSendEvent(ctx.channel(), user, byteBuf);
+        int readerIndex = byteBuf.readerIndex();
+        PacketEvents.getAPI().getEventManager().callEvent(packetSendEvent, () -> byteBuf.readerIndex(readerIndex));
+        if (!packetSendEvent.isCancelled()) {
+            if (packetSendEvent.getLastUsedWrapper() != null) {
+                packetSendEvent.getByteBuf().clear();
+                packetSendEvent.getLastUsedWrapper().writeVarInt(packetSendEvent.getPacketId());
+                packetSendEvent.getLastUsedWrapper().writeData();
             }
-        } finally {
-            transformedBuf.release();
+            byteBuf.readerIndex(firstReaderIndex);
+            postTasks.addAll(packetSendEvent.getPostTasks());
         }
     }
 
@@ -59,7 +54,9 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+        if (!msg.isReadable())return;
+        out.writeBytes(msg);
         handle(PacketEvents.getAPI().getNettyManager().wrapChannelHandlerContext(ctx),
-                PacketEvents.getAPI().getNettyManager().wrapByteBuf(msg), out);
+                PacketEvents.getAPI().getNettyManager().wrapByteBuf(out));
     }
 }

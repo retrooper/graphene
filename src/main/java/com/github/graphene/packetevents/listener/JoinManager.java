@@ -9,6 +9,8 @@ import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
+import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.world.Difficulty;
@@ -84,7 +86,9 @@ public class JoinManager {
 
             //Send held item change
             user.setHotbarIndex(0, ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(1).build());
-            user.setHotbarIndex(1, ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1).build());
+            user.setHotbarIndex(1, ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1)
+                    .addEnchantment(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(3).build())
+                    .build());
             user.setHotbarIndex(2, ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build());
             user.updateHotbar();
             WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);

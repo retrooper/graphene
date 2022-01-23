@@ -16,10 +16,7 @@ import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.Equipment;
-import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
-import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
-import com.github.retrooper.packetevents.protocol.player.InteractionHand;
+import com.github.retrooper.packetevents.protocol.player.*;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.Vector3d;
@@ -53,7 +50,7 @@ public class EntityHandler implements PacketListener {
                 entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
-                if (playerDigging.getAction() == WrapperPlayClientPlayerDigging.Action.FINISHED_DIGGING) {
+                if (playerDigging.getAction() == DiggingAction.FINISHED_DIGGING) {
                     entityInformation.setLastBlockActionPosition(playerDigging.getBlockPosition());
 
                     //Update the chunk cache(set to air)
@@ -118,7 +115,6 @@ public class EntityHandler implements PacketListener {
                     switch (updateType) {
                         case POSITION: {
                             Vector3d deltaPosition = currentLocation.getPosition().subtract(entityInformation.getTickLocation().getPosition());
-                            System.out.println("delta movement by user " + user.getUsername() + " : " + deltaPosition.toString());
                             if (!deltaPosition.equals(Vector3d.zero())) {
                                 if (shouldSendEntityTeleport(deltaPosition)) {
                                     WrapperPlayServerEntityTeleport teleport =
@@ -126,6 +122,7 @@ public class EntityHandler implements PacketListener {
                                                     currentLocation, user.getEntityInformation().isOnGround());
                                     packetQueue.add(teleport);
                                 } else {
+                                    //TODO send relative move packets too
                                     double deltaX = deltaPosition.getX();
                                     double deltaY = deltaPosition.getY();
                                     double deltaZ = deltaPosition.getZ();
