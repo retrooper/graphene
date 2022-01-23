@@ -7,11 +7,16 @@ import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.netty.channel.ChannelHandlerContextAbstract;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.MessageToByteEncoder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressWarnings("RedundantThrows")
 public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
     public final User user;
+    private List<Runnable> postTasks = new ArrayList<>();
 
     public PacketEncoder(User user) {
         this.user = user;
@@ -31,13 +36,25 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
                 }
                 transformedBuf.readerIndex(firstReaderIndex);
                 output.writeBytes((ByteBuf) transformedBuf.retain().rawByteBuf());
-                if (packetSendEvent.getPostTask() != null) {
-                    ((ChannelHandlerContext) ctx.rawChannelHandlerContext()).newPromise().addListener(f -> packetSendEvent.getPostTask().run());
-                }
+                postTasks.addAll(packetSendEvent.getPostTasks());
             }
         } finally {
             transformedBuf.release();
         }
+    }
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (!postTasks.isEmpty()) {
+            List<Runnable> postTasks = new ArrayList<>(this.postTasks);
+            this.postTasks.clear();
+            promise.addListener(f -> {
+                for (Runnable task : postTasks) {
+                    task.run();
+                }
+            });
+        }
+        super.write(ctx, msg, promise);
     }
 
     @Override

@@ -64,33 +64,22 @@ public class EntityHandler implements PacketListener {
             } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
                 user.setClientSettings(new ClientSettings(new WrapperPlayClientSettings(event)));
                 entityInformation.queueUpdate(UpdateType.METADATA);
-            } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION) {
-                WrapperPlayClientPlayerPosition positionWrapper = new WrapperPlayClientPlayerPosition(event);
-                Vector3d position = positionWrapper.getPosition();
-                entityInformation.getLocation().setPosition(position);
-                entityInformation.setOnGround(positionWrapper.isOnGround());
-
-                entityInformation.queueUpdate(UpdateType.POSITION);
-                entityInformation.queueUpdate(UpdateType.GROUND);
-            } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION) {
-                WrapperPlayClientPlayerPositionAndRotation positionRotationWrapper = new WrapperPlayClientPlayerPositionAndRotation(event);
-                Location location = new Location(positionRotationWrapper.getPosition(),
-                        positionRotationWrapper.getYaw(), positionRotationWrapper.getPitch());
-                entityInformation.setLocation(location);
-
-                entityInformation.setOnGround(positionRotationWrapper.isOnGround());
-                entityInformation.queueUpdate(UpdateType.POSITION_ANGLE);
-                entityInformation.queueUpdate(UpdateType.GROUND);
-            } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_ROTATION) {
-                WrapperPlayClientPlayerRotation rotationWrapper = new WrapperPlayClientPlayerRotation(event);
-                entityInformation.getLocation().setYaw(rotationWrapper.getYaw());
-                entityInformation.getLocation().setPitch(rotationWrapper.getPitch());
-                entityInformation.setOnGround(rotationWrapper.isOnGround());
-                entityInformation.queueUpdate(UpdateType.ANGLE);
-                entityInformation.queueUpdate(UpdateType.GROUND);
-            } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_FLYING) {
-                WrapperPlayClientPlayerFlying flyingWrapper = new WrapperPlayClientPlayerFlying(event);
-                entityInformation.setOnGround(flyingWrapper.isOnGround());
+            } else if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
+                WrapperPlayClientPlayerFlying flying = new WrapperPlayClientPlayerFlying(event);
+                Location location = flying.getLocation();
+                if (flying.hasPositionChanged() && flying.hasRotationChanged()) {
+                    entityInformation.setLocation(location);
+                    entityInformation.queueUpdate(UpdateType.POSITION_ANGLE);
+                } else if (flying.hasPositionChanged()) {
+                    entityInformation.setLocation(new Location(location.getPosition(), entityInformation.getLocation().getYaw(), entityInformation.getLocation().getPitch()));
+                    //entityInformation.getLocation().setPosition(location.getPosition());
+                    entityInformation.queueUpdate(UpdateType.POSITION);
+                } else if (flying.hasRotationChanged()) {
+                    entityInformation.getLocation().setYaw(location.getYaw());
+                    entityInformation.getLocation().setPitch(location.getPitch());
+                    entityInformation.queueUpdate(UpdateType.ANGLE);
+                }
+                entityInformation.setOnGround(flying.isOnGround());
                 entityInformation.queueUpdate(UpdateType.GROUND);
             } else if (event.getPacketType() == PacketType.Play.Client.ENTITY_ACTION) {
                 WrapperPlayClientEntityAction entityActionWrapper = new WrapperPlayClientEntityAction(event);
@@ -125,14 +114,17 @@ public class EntityHandler implements PacketListener {
                 Queue<UpdateType> queuedUpdates = entityInformation.getQueuedUpdates();
                 List<PacketWrapper<?>> packetQueue = new ArrayList<>();
                 Location currentLocation = entityInformation.getLocation();
-                Vector3d deltaPosition = currentLocation.getPosition().subtract(entityInformation.getTickLocation().getPosition());
                 for (UpdateType updateType : queuedUpdates) {
                     switch (updateType) {
-                        case POSITION:
+                        case POSITION: {
+                            Vector3d deltaPosition = currentLocation.getPosition().subtract(entityInformation.getTickLocation().getPosition());
                             System.out.println("delta movement by user " + user.getUsername() + " : " + deltaPosition.toString());
                             if (!deltaPosition.equals(Vector3d.zero())) {
                                 if (shouldSendEntityTeleport(deltaPosition)) {
-                                    packetQueue.add(getEntityTeleport(user));
+                                    WrapperPlayServerEntityTeleport teleport =
+                                            new WrapperPlayServerEntityTeleport(user.getEntityId(),
+                                                    currentLocation, user.getEntityInformation().isOnGround());
+                                    packetQueue.add(teleport);
                                 } else {
                                     double deltaX = deltaPosition.getX();
                                     double deltaY = deltaPosition.getY();
@@ -146,10 +138,15 @@ public class EntityHandler implements PacketListener {
 
                             }
                             break;
-                        case POSITION_ANGLE:
+                        }
+                        case POSITION_ANGLE: {
+                            Vector3d deltaPosition = currentLocation.getPosition().subtract(entityInformation.getTickLocation().getPosition());
                             //System.out.println("dmA: " + deltaPosition.toString());
                             if (shouldSendEntityTeleport(deltaPosition)) {
-                                packetQueue.add(getEntityTeleport(user));
+                                WrapperPlayServerEntityTeleport teleport =
+                                        new WrapperPlayServerEntityTeleport(user.getEntityId(),
+                                                currentLocation, user.getEntityInformation().isOnGround());
+                                packetQueue.add(teleport);
                             } else {
                                 double deltaX = deltaPosition.getX();
                                 double deltaY = deltaPosition.getY();
@@ -165,6 +162,7 @@ public class EntityHandler implements PacketListener {
                             }
 
                             break;
+                        }
                         case ANGLE:
                             packetQueue.add(new WrapperPlayServerEntityRotation(user.getEntityId(),
                                     (byte) currentLocation.getYaw(), (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
