@@ -1,7 +1,7 @@
 package com.github.graphene.entity;
 
 import com.github.graphene.Main;
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
@@ -11,7 +11,6 @@ import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.Style;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,32 +56,32 @@ public class ItemEntity {
         this.item = item;
     }
 
-    public void pickup(User user, Queue<User> target) {
+    public void pickup(Player player, Queue<Player> target) {
         //Half a second
         if ((System.currentTimeMillis() - lastSpawnTime) >= 1000L) {
-            for (User player : target) {
-                WrapperPlayServerCollectItem collectItem = new WrapperPlayServerCollectItem(entityId, user.getEntityId(), getItem().getAmount());
+            for (Player p : target) {
+                WrapperPlayServerCollectItem collectItem = new WrapperPlayServerCollectItem(entityId, p.getEntityId(), getItem().getAmount());
                 WrapperPlayServerDestroyEntities destroyEntities = new WrapperPlayServerDestroyEntities(getEntityId());
-                player.sendPacket(destroyEntities);
-                player.sendPacket(collectItem);
+                p.sendPacket(destroyEntities);
+                p.sendPacket(collectItem);
             }
             Main.ITEM_ENTITIES.remove(this);
-            ItemStack currentItem = user.getCurrentItem();
+            ItemStack currentItem = player.getCurrentItem();
             if (currentItem == null) {
-                user.setCurrentItem(getItem());
+                player.setCurrentItem(getItem());
             }
             else {
                 //TODO Look into your inventory, look for the type and add
                 currentItem.grow(getItem().getAmount());
             }
-            user.updateHotbar();
+            player.updateHotbar();
         }
     }
 
-    public void spawn(User spawner, Queue<User> target) {
+    public void spawn(Player spawner, Queue<Player> target) {
         Vector3d pos = spawner.getEntityInformation().getLocation().getPosition();
         pos.add(new Vector3d(0, 4, 0));
-        for (User player : target) {
+        for (Player player : target) {
             WrapperPlayServerSpawnEntity spawnEntity = new WrapperPlayServerSpawnEntity(entityId,
                     Optional.of(UUID.randomUUID()),
                     EntityTypes.ITEM,

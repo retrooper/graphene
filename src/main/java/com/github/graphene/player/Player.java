@@ -1,4 +1,4 @@
-package com.github.graphene.user;
+package com.github.graphene.player;
 
 import com.github.graphene.Main;
 import com.github.graphene.util.entity.ClientSettings;
@@ -6,12 +6,13 @@ import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
-import com.github.retrooper.packetevents.protocol.player.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
@@ -27,7 +28,7 @@ import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.UUID;
 
-public class User {
+public class Player {
     private final Channel channel;
     private ConnectionState state;
     private ClientVersion clientVersion;
@@ -37,7 +38,7 @@ public class User {
     private String serverID = "";
     private byte[] verifyToken;
     private String serverAddress;
-    private GameProfile gameProfile;
+    private UserProfile userProfile;
     private long lastKeepAliveTime = Long.MAX_VALUE;
     private long keepAliveTimer = System.currentTimeMillis();
     private long latency = 0L;
@@ -47,7 +48,7 @@ public class User {
     public final ItemStack[] inventory = new ItemStack[45];
     public int currentSlot;
 
-    public User(Channel channel, ConnectionState state) {
+    public Player(Channel channel, ConnectionState state) {
         this.channel = channel;
         this.state = state;
         this.clientSettings = new ClientSettings("", 0, new HashSet<>(), WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
@@ -71,16 +72,16 @@ public class User {
         inventory[slot + 36] = itemStack;
     }
 
-    public GameProfile getGameProfile() {
-        return gameProfile;
-    }
-
-    public void setGameProfile(GameProfile gameProfile) {
-        this.gameProfile = gameProfile;
-    }
-
     public String getUsername() {
-        return gameProfile.getName();
+        return userProfile.getName();
+    }
+
+    public UserProfile getUserProfile() {
+        return userProfile;
+    }
+
+    public void setUserProfile(UserProfile userProfile) {
+        this.userProfile = userProfile;
     }
 
     public Channel getChannel() {
@@ -157,7 +158,7 @@ public class User {
     }
 
     public void sendMessage(Component component) {
-        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(component, WrapperPlayServerChatMessage.ChatPosition.CHAT,
+        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(component, ChatPosition.CHAT,
                 new UUID(0L, 0L));
         sendPacket(chatMessage);
     }

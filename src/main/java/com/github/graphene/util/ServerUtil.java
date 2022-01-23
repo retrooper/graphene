@@ -1,10 +1,10 @@
 package com.github.graphene.util;
 
 import com.github.graphene.Main;
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
-import com.github.retrooper.packetevents.util.AdventureSerializer;
+import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
@@ -18,98 +18,98 @@ import java.util.UUID;
 
 public class ServerUtil {
     public static void broadcastMessage(Component component) {
-        for (User user : Main.USERS) {
+        for (Player player : Main.PLAYERS) {
             WrapperPlayServerChatMessage outChatMessage = new WrapperPlayServerChatMessage(component,
-                    WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+                    ChatPosition.CHAT, new UUID(0L, 0L));
             outChatMessage.prepareForSend();
-            user.sendPacket(outChatMessage);
+            player.sendPacket(outChatMessage);
         }
     }
 
-    public static void handlePlayerLeave(User user) {
-        ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(user.getChannel());
+    public static void handlePlayerLeave(Player player) {
+        ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(player.getChannel());
         PacketEvents.getAPI().getPlayerManager().CLIENT_VERSIONS.remove(ch);
         PacketEvents.getAPI().getPlayerManager().CONNECTION_STATES.remove(ch);
-        PacketEvents.getAPI().getPlayerManager().GAME_PROFILES.remove(ch);
-        PacketEvents.getAPI().getPlayerManager().CHANNELS.remove(user.getUsername());
-        PacketEvents.getAPI().getPlayerManager().PLAYER_ATTRIBUTES.remove(user.getGameProfile().getId());
-        Main.USERS.remove(user);
+        PacketEvents.getAPI().getPlayerManager().USERS.remove(ch);
+        PacketEvents.getAPI().getPlayerManager().CHANNELS.remove(player.getUsername());
+        PacketEvents.getAPI().getPlayerManager().PLAYER_ATTRIBUTES.remove(player.getUserProfile().getUUID());
+        Main.PLAYERS.remove(player);
         //TODO If it doesnt work, make sub component yellow too
         Component translatableComponent = Component.translatable("multiplayer.player.left").color(NamedTextColor.YELLOW)
                 .args(Component
-                        .text(user.getUsername())
+                        .text(player.getUsername())
                         .asComponent())
                 .asComponent();
-        WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(null, user.getGameProfile(), null, -1);
+        WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(null, player.getUserProfile(), null, -1);
         WrapperPlayServerPlayerInfo removePlayerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, data);
         removePlayerInfo.prepareForSend();
 
-        WrapperPlayServerDestroyEntities destroyEntities = new WrapperPlayServerDestroyEntities(user.getEntityId());
+        WrapperPlayServerDestroyEntities destroyEntities = new WrapperPlayServerDestroyEntities(player.getEntityId());
         destroyEntities.prepareForSend();
 
         WrapperPlayServerChatMessage leftMessage =
                 new WrapperPlayServerChatMessage(translatableComponent,
-                        WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+                        ChatPosition.CHAT, new UUID(0L, 0L));
         leftMessage.prepareForSend();
-        for (User player : Main.USERS) {
+        for (Player p : Main.PLAYERS) {
             //Remove this user from everyone's tab list
             removePlayerInfo.getBuffer().retain();
-            player.sendPacket(removePlayerInfo);
+            p.sendPacket(removePlayerInfo);
             //Destroy this user's entity
             destroyEntities.getBuffer().retain();
-            player.sendPacket(destroyEntities);
+            p.sendPacket(destroyEntities);
             //Send a message to everyone that this user has left
             leftMessage.getBuffer().retain();
-            player.sendPacket(leftMessage);
+            p.sendPacket(leftMessage);
         }
-        Main.LOGGER.info(user.getUsername() + " left the server.");
+        Main.LOGGER.info(player.getUsername() + " left the server.");
     }
 
-    public static void handlePlayerJoin(User user) {
-        Main.USERS.add(user);
+    public static void handlePlayerJoin(Player player) {
+        Main.PLAYERS.add(player);
         HoverEvent<HoverEvent.ShowEntity> hoverEvent = HoverEvent.hoverEvent(HoverEvent.Action.SHOW_ENTITY,
                 HoverEvent.ShowEntity.of(Key.key("minecraft:player"),
-                        user.getGameProfile().getId(),
-                        Component.text(user.getUsername())));
-        ClickEvent clickEvent = ClickEvent.suggestCommand("/tell " + user.getUsername() + " Welcome!");
+                        player.getUserProfile().getUUID(),
+                        Component.text(player.getUsername())));
+        ClickEvent clickEvent = ClickEvent.suggestCommand("/tell " + player.getUsername() + " Welcome!");
         Component translatableComponent = Component.translatable("multiplayer.player.joined")
                 .color(NamedTextColor.YELLOW)
                 .args(Component
-                        .text(user.getUsername())
+                        .text(player.getUsername())
                         .hoverEvent(hoverEvent)
                         .clickEvent(clickEvent).asComponent())
                 .asComponent();
 
 
         WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent,
-                WrapperPlayServerChatMessage.ChatPosition.CHAT, new UUID(0L, 0L));
+                ChatPosition.CHAT, new UUID(0L, 0L));
         loginMessage.prepareForSend();
 
-        Component otherDisplayName = Component.text(user.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
+        Component otherDisplayName = Component.text(player.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
         WrapperPlayServerPlayerInfo.PlayerData nextData =
-                new WrapperPlayServerPlayerInfo.PlayerData(otherDisplayName, user.getGameProfile(), user.getGameMode(), 100);
+                new WrapperPlayServerPlayerInfo.PlayerData(otherDisplayName, player.getUserProfile(), player.getGameMode(), 100);
         WrapperPlayServerPlayerInfo nextPlayerInfo =
                 new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, nextData);
         nextPlayerInfo.prepareForSend();
 
-        for (User player : Main.USERS) {
+        for (Player p : Main.PLAYERS) {
             //Send every player the login message
             loginMessage.getBuffer().retain();
-            player.sendPacket(loginMessage);
+            p.sendPacket(loginMessage);
 
             //Add this joining user to everyone's tab list
-            Component displayName = Component.text(player.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
+            Component displayName = Component.text(p.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
             WrapperPlayServerPlayerInfo.PlayerData data = new WrapperPlayServerPlayerInfo.PlayerData(displayName,
-                    player.getGameProfile(), player.getGameMode(), 100);
+                    p.getUserProfile(), p.getGameMode(), 100);
             WrapperPlayServerPlayerInfo playerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, data);
-            user.sendPacket(playerInfo);
+            player.sendPacket(playerInfo);
 
             //Add everyone to this user's tab list
             nextPlayerInfo.getBuffer().retain();
-            player.sendPacket(nextPlayerInfo);
+            p.sendPacket(nextPlayerInfo);
         }
 
-        Main.LOGGER.info(user.getUsername() + " has joined the server.");
+        Main.LOGGER.info(player.getUsername() + " has joined the server.");
     }
 
 }

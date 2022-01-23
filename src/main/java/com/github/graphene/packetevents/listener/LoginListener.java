@@ -3,14 +3,14 @@ package com.github.graphene.packetevents.listener;
 import com.github.graphene.Main;
 import com.github.graphene.handler.encryption.PacketDecryptionHandler;
 import com.github.graphene.handler.encryption.PacketEncryptionHandler;
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.GameProfile;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.AdventureSerializer;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
 import com.github.retrooper.packetevents.util.UUIDUtil;
@@ -55,8 +55,7 @@ public class LoginListener implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        User user = (User) event.getPlayer();
-
+        Player player = (Player) event.getPlayer();
         if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
             WrapperHandshakingClientHandshake handshake = new WrapperHandshakingClientHandshake(event);
             int protocolVersion = handshake.getProtocolVersion();
@@ -68,7 +67,7 @@ public class LoginListener implements PacketListener {
             PacketEvents.getAPI().getPlayerManager().CHANNELS.put(username, event.getChannel());
             //If online mode is set to false, we just generate a UUID based on their username.
             UUID uuid = isOnlineMode() ? null : UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
-            user.setGameProfile(new GameProfile(uuid, username));
+            player.setUserProfile(new UserProfile(uuid, username));
             //If online mode is enabled, we begin the encryption and authentication process.
             if (isOnlineMode()) {
                 //Server ID may be empty
@@ -79,27 +78,27 @@ public class LoginListener implements PacketListener {
                 byte[] verifyToken = new byte[4];
                 new Random().nextBytes(verifyToken);
 
-                user.setVerifyToken(verifyToken);
-                user.setServerId(serverID);
+                player.setVerifyToken(verifyToken);
+                player.setServerId(serverID);
                 //Send our encryption request
                 WrapperLoginServerEncryptionRequest encryptionRequest = new WrapperLoginServerEncryptionRequest(serverID, key, verifyToken);
-                user.sendPacket(encryptionRequest);
+                player.sendPacket(encryptionRequest);
             } else {
                 boolean alreadyLoggedIn = false;
-                for (User lUser : Main.USERS) {
-                    if (lUser.getUsername().equals(username)) {
+                for (Player p : Main.PLAYERS) {
+                    if (p.getUsername().equals(username)) {
                         alreadyLoggedIn = true;
                     }
                 }
 
                 if (!alreadyLoggedIn) {
                     //Since we're not in online mode, we just inform the client that they have successfully logged in.
-                    WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getGameProfile());
-                    user.sendPacket(loginSuccess);
-                    user.setState(ConnectionState.PLAY);
-                    JoinManager.handleJoin(user);
+                    WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
+                    player.sendPacket(loginSuccess);
+                    player.setState(ConnectionState.PLAY);
+                    JoinManager.handleJoin(player);
                 } else {
-                    user.kick("A user with the username " + username + " is already logged in.");
+                    player.kick("A user with the username " + username + " is already logged in.");
                 }
             }
         }
@@ -119,25 +118,25 @@ public class LoginListener implements PacketListener {
                 digest = MessageDigest.getInstance("SHA-1");
             } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
-                user.forceDisconnect();
+                player.forceDisconnect();
                 return; // basically asserts that digest must be not null
             }
-            digest.update(user.getServerId().getBytes(StandardCharsets.UTF_8));
+            digest.update(player.getServerId().getBytes(StandardCharsets.UTF_8));
             digest.update(sharedSecret);
             digest.update(Main.KEY_PAIR.getPublic().getEncoded());
             //We generate a server id hash that will be used in our web request to mojang's session server.
             String serverIdHash = new BigInteger(digest.digest()).toString(16);
             //Make sure the decrypted verify token from the client is the same one we sent out earlier.
-            if (Arrays.equals(user.getVerifyToken(), verifyToken)) {
+            if (Arrays.equals(player.getVerifyToken(), verifyToken)) {
                 //GET web request using our server id hash.
                 try {
-                    URL url = new URL("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + user.getUsername() + "&serverId=" + serverIdHash);
+                    URL url = new URL("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + player.getUsername() + "&serverId=" + serverIdHash);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestProperty("Authorization", null);
                     connection.setRequestMethod("GET");
                     if (connection.getResponseCode() == 204) {
-                        Main.LOGGER.info("Failed to authenticate " + user.getUsername() + "!");
-                        user.kick("Failed to authenticate your connection.");
+                        Main.LOGGER.info("Failed to authenticate " + player.getUsername() + "!");
+                        player.kick("Failed to authenticate your connection.");
                         return;
                     }
                     BufferedReader in = new BufferedReader(
@@ -155,14 +154,14 @@ public class LoginListener implements PacketListener {
                     String rawUUID = jsonObject.get("id").getAsString();
                     UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
                     JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
-                    for (User lUser : Main.USERS) {
-                        if (lUser.getUsername().equals(username)) {
-                            lUser.kick("You logged in from another location!");
+                    for (Player lPlayer : Main.PLAYERS) {
+                        if (lPlayer.getUsername().equals(username)) {
+                            lPlayer.kick("You logged in from another location!");
                         }
                     }
                     //Update our game profile, feed it with our real UUID, we've been authenticated.
-                    GameProfile profile = user.getGameProfile();
-                    profile.setId(uuid);
+                    UserProfile profile = player.getUserProfile();
+                    profile.setUUID(uuid);
                     profile.setName(username);
                     for (JsonElement element : textureProperties) {
                         JsonObject property = element.getAsJsonObject();
@@ -174,7 +173,7 @@ public class LoginListener implements PacketListener {
                         profile.getTextureProperties().add(new TextureProperty(name, value, signature));
                     }
                     //From now on, all packets will be decrypted and encrypted.
-                    ChannelPipeline pipeline = user.getChannel().pipeline();
+                    ChannelPipeline pipeline = player.getChannel().pipeline();
                     SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
                     Cipher decryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
                     decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
@@ -186,17 +185,17 @@ public class LoginListener implements PacketListener {
                     pipeline.replace("encryption_handler", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
                     //We now inform the client that they have successfully logged in.
                     //Note: The login success packet will be encrypted here.
-                    WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(user.getGameProfile());
-                    user.sendPacket(loginSuccess);
-                    user.setState(ConnectionState.PLAY);
-                    JoinManager.handleJoin(user);
+                    WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
+                    player.sendPacket(loginSuccess);
+                    player.setState(ConnectionState.PLAY);
+                    JoinManager.handleJoin(player);
                 } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
                         | InvalidKeyException | InvalidAlgorithmParameterException ex) {
                     ex.printStackTrace();
                 }
             } else {
-                Main.LOGGER.warning("Failed to authenticate " + user.getUsername() + ", because they replied with an invalid verify token!");
-                user.forceDisconnect();
+                Main.LOGGER.warning("Failed to authenticate " + player.getUsername() + ", because they replied with an invalid verify token!");
+                player.forceDisconnect();
             }
             // });
         }

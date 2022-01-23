@@ -7,12 +7,15 @@ import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
 import com.github.graphene.packetevents.listener.*;
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.graphene.util.ChunkUtil;
 import com.github.graphene.util.Vector2i;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.netty.bootstrap.ServerBootstrap;
@@ -45,7 +48,7 @@ public class Main {
     public static final KeyPair KEY_PAIR = generateKeyPair();
     public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     public static final int PORT = 25600;
-    public static final Queue<User> USERS = new ConcurrentLinkedQueue<>();
+    public static final Queue<Player> PLAYERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
     public static boolean ONLINE_MODE = true;
     public static int ENTITIES = 0;
@@ -73,10 +76,11 @@ public class Main {
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
-        Main.LOGGER.info("Starting Graphene server " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
+        Main.LOGGER.info("Starting Graphene Server. Version: " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
 
         Main.LOGGER.info("Preparing chunks...");
         ChunkUtil.generateChunkColumns(2, 1, true);
+        Main.LOGGER.info("Binding to port... " + PORT);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
@@ -87,9 +91,12 @@ public class Main {
                         @SuppressWarnings("RedundantThrows")
                         @Override
                         public void initChannel(@NotNull SocketChannel channel) throws Exception {
-                            User user = new User(channel, ConnectionState.HANDSHAKING);
-                            PacketDecoder decoder = new PacketDecoder(user);
-                            PacketEncoder encoder = new PacketEncoder(user);
+                            ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(channel);
+                            User user = new User(ch, new UserProfile(null, null));
+                            PacketEvents.getAPI().getPlayerManager().setUser(ch, user);
+                            Player player = new Player(channel, ConnectionState.HANDSHAKING);
+                            PacketDecoder decoder = new PacketDecoder(user, player);
+                            PacketEncoder encoder = new PacketEncoder(user, player);
                             channel.pipeline()
                                     .addLast("decryption_handler", new ChannelHandlerAdapter() {
                                     })
@@ -106,10 +113,9 @@ public class Main {
 
             WORKER_THREADS.execute(Main::runKeepAliveLoop);
 
-            Main.LOGGER.info("Server started on *:" + PORT + " (" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
-
             // Bind and start to accept incoming connections.
             ChannelFuture f = b.bind(PORT).sync();
+            Main.LOGGER.info("(" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
 
             Main.runTickLoop();
 
@@ -144,21 +150,21 @@ public class Main {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            for (User user : USERS) {
-                if ((System.currentTimeMillis() - user.getKeepAliveTimer()) > 3000L) {
-                    long elapsedTime = System.currentTimeMillis() - user.getLastKeepAliveTime();
+            for (Player player : PLAYERS) {
+                if ((System.currentTimeMillis() - player.getKeepAliveTimer()) > 3000L) {
+                    long elapsedTime = System.currentTimeMillis() - player.getLastKeepAliveTime();
 
                     if (elapsedTime > 30000L) {
-                        user.kick("Timed out.");
-                        Main.LOGGER.info(user.getUsername() + " was kicked for not responding to keep alives!");
+                        player.kick("Timed out.");
+                        Main.LOGGER.info(player.getUsername() + " was kicked for not responding to keep alives!");
                         break;
                     }
 
                     WrapperPlayServerKeepAlive keepAlive = new WrapperPlayServerKeepAlive((long) Math.floor(Math.random() * Integer.MAX_VALUE));
-                    user.sendPacket(keepAlive);
+                    player.sendPacket(keepAlive);
 
-                    user.setKeepAliveTimer(System.currentTimeMillis());
-                    user.setSendKeepAliveTime(System.currentTimeMillis());
+                    player.setKeepAliveTimer(System.currentTimeMillis());
+                    player.setSendKeepAliveTime(System.currentTimeMillis());
                 }
             }
         }

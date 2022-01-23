@@ -1,26 +1,24 @@
 package com.github.graphene.packetevents.manager.player;
 
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.player.PlayerManager;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import com.github.retrooper.packetevents.protocol.player.GameProfile;
+import com.github.retrooper.packetevents.protocol.player.User;
 import org.jetbrains.annotations.NotNull;
 
 public class PlayerManagerImpl implements PlayerManager {
     @Override
     public int getPing(@NotNull Object player) {
-        User user = (User) player;
-        return (int) user.getLatency();
+        return (int) ((Player) player).getLatency();
     }
 
     //TODO See if we can still put it in the map
     @Override
     public @NotNull ClientVersion getClientVersion(@NotNull Object player) {
-        User user = (User) player;
-        return user.getClientVersion();
+        return ((Player) player).getClientVersion();
     }
 
     @Override
@@ -49,13 +47,13 @@ public class PlayerManagerImpl implements PlayerManager {
     }
 
     @Override
-    public GameProfile getGameProfile(@NotNull Object player) {
+    public User getUser(@NotNull Object player) {
         ChannelAbstract channel = getChannel(player);
-        return getGameProfile(channel);
+        return getUser(channel);
     }
 
     @Override
     public ChannelAbstract getChannel(@NotNull Object player) {
-        return PacketEvents.getAPI().getNettyManager().wrapChannel(((User) player).getChannel());
+        return PacketEvents.getAPI().getNettyManager().wrapChannel(((Player) player).getChannel());
     }
 }

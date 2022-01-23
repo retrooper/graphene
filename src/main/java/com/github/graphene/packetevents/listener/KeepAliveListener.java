@@ -1,6 +1,6 @@
 package com.github.graphene.packetevents.listener;
 
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.graphene.util.entity.UpdateType;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
@@ -9,12 +9,12 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 public class KeepAliveListener implements PacketListener {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        User user = (User) event.getPlayer();
+        Player player = (Player) event.getPlayer();
         if (event.getPacketType() == PacketType.Play.Client.KEEP_ALIVE) {
-            if (user.getSendKeepAliveTime() != 0L) {
-                user.setLatency(System.currentTimeMillis() - user.getSendKeepAliveTime());
-                user.getEntityInformation().queueUpdate(UpdateType.LATENCY);
-                user.setLastKeepAliveTime(System.currentTimeMillis());
+            if (player.getSendKeepAliveTime() != 0L) {
+                player.setLatency(System.currentTimeMillis() - player.getSendKeepAliveTime());
+                player.getEntityInformation().queueUpdate(UpdateType.LATENCY);
+                player.setLastKeepAliveTime(System.currentTimeMillis());
             }
         }
 

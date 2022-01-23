@@ -1,10 +1,11 @@
 package com.github.graphene.handler;
 
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.netty.channel.ChannelHandlerContextAbstract;
+import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -15,16 +16,18 @@ import java.util.List;
 
 @SuppressWarnings("RedundantThrows")
 public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
-    public final User user;
+    public final Player player;
+    public User user;
     private List<Runnable> postTasks = new ArrayList<>();
 
-    public PacketEncoder(User user) {
+    public PacketEncoder(User user, Player player) {
         this.user = user;
+        this.player = player;
     }
 
     public void handle(ChannelHandlerContextAbstract ctx, ByteBufAbstract byteBuf) {
         int firstReaderIndex = byteBuf.readerIndex();
-        PacketSendEvent packetSendEvent = new PacketSendEvent(ctx.channel(), user, byteBuf);
+        PacketSendEvent packetSendEvent = new PacketSendEvent(ctx.channel(), user, player, byteBuf);
         int readerIndex = byteBuf.readerIndex();
         PacketEvents.getAPI().getEventManager().callEvent(packetSendEvent, () -> byteBuf.readerIndex(readerIndex));
         if (!packetSendEvent.isCancelled()) {

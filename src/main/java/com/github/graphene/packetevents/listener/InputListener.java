@@ -2,7 +2,7 @@ package com.github.graphene.packetevents.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.entity.ItemEntity;
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.graphene.util.ServerUtil;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
@@ -29,9 +29,9 @@ import java.util.List;
 public class InputListener implements PacketListener {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        User user = (User) event.getPlayer();
+        Player player = (Player) event.getPlayer();
         if (WrapperPlayClientPlayerFlying.isFlying(event.getPacketType())) {
-            Vector3d position = user.getEntityInformation().getLocation().getPosition();
+            Vector3d position = player.getEntityInformation().getLocation().getPosition();
             double shortestDistance = ItemEntity.PICKUP_DISTANCE;
             ItemEntity shortestItemEntity = null;
             for (ItemEntity itemEntity : Main.ITEM_ENTITIES) {
@@ -46,32 +46,32 @@ public class InputListener implements PacketListener {
             }
             if (shortestItemEntity != null) {
                 //Pick it up for them(also destroy)
-                shortestItemEntity.pickup(user, Main.USERS);
+                shortestItemEntity.pickup(player, Main.PLAYERS);
             }
         } else if (event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE) {
             WrapperPlayClientChatMessage chatMessage = new WrapperPlayClientChatMessage(event);
             String msg = chatMessage.getMessage();
-            Main.LOGGER.info(user.getUsername() + ": " + msg);
+            Main.LOGGER.info(player.getUsername() + ": " + msg);
             //Prefix the display message with the player's name in green, and then a colon and their message in white
-            Component displayComponent = Component.text(user.getUsername()).color(NamedTextColor.GREEN)
+            Component displayComponent = Component.text(player.getUsername()).color(NamedTextColor.GREEN)
                     .append(Component.text(": " + msg).color(NamedTextColor.WHITE).asComponent()).asComponent();
             //Send it to everyone(including the sender)
             ServerUtil.broadcastMessage(displayComponent);
         } else if (event.getPacketType() == PacketType.Play.Client.HELD_ITEM_CHANGE) {
             WrapperPlayClientHeldItemChange heldItemChange = new WrapperPlayClientHeldItemChange(event);
             int slot = heldItemChange.getSlot();
-            user.currentSlot = slot;
-            @Nullable ItemStack item = user.getHotbarIndex(slot);
+            player.currentSlot = slot;
+            @Nullable ItemStack item = player.getHotbarIndex(slot);
 
-            for (User player : Main.USERS) {
-                if (player.getEntityId() != user.getEntityId()) {
+            for (Player p : Main.PLAYERS) {
+                if (player.getEntityId() != p.getEntityId()) {
                     List<Equipment> equipment = new ArrayList<>();
                     if (item == null) {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(64).build();
                     }
                     equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
-                    WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(user.getEntityId(), equipment);
-                    player.sendPacket(equipmentPacket);
+                    WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(player.getEntityId(), equipment);
+                    p.sendPacket(equipmentPacket);
                 }
             }
         } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
@@ -79,38 +79,38 @@ public class InputListener implements PacketListener {
             DiggingAction action = digging.getAction();
             if (action == DiggingAction.DROP_ITEM ||
                     action == DiggingAction.DROP_ITEM_STACK) {
-                ItemStack item = user.getCurrentItem();
+                ItemStack item = player.getCurrentItem();
                 //TODO Remove debug
                 if (item != null) {
                     int newAmount = action == DiggingAction.DROP_ITEM ? 1 : item.getAmount();
                     ItemStack entity = item.copy();
                     entity.setAmount(newAmount);
                     if (item.isEmpty()) {
-                        user.setCurrentItem(null);
+                        player.setCurrentItem(null);
                     } else {
-                        user.getCurrentItem().shrink(newAmount);
+                        player.getCurrentItem().shrink(newAmount);
                     }
-                    user.updateHotbar();
-                    ItemEntity itemEntity = new ItemEntity(user.getEntityInformation().getLocation().getPosition(),
+                    player.updateHotbar();
+                    ItemEntity itemEntity = new ItemEntity(player.getEntityInformation().getLocation().getPosition(),
                             entity);
-                    itemEntity.spawn(user, Main.USERS);
+                    itemEntity.spawn(player, Main.PLAYERS);
                 }
             } else if (action == DiggingAction.FINISHED_DIGGING) {
                 //Send this always if in creative
                 int blockID = 0;
                 WrapperPlayServerAcknowledgePlayerDigging diggingResponse =
                         new WrapperPlayServerAcknowledgePlayerDigging(action, true, digging.getBlockPosition(), blockID);
-                user.sendPacket(diggingResponse);
+                player.sendPacket(diggingResponse);
             }
         } else if (event.getPacketType() == PacketType.Play.Client.INTERACT_ENTITY) {
             WrapperPlayClientInteractEntity interactEntity = new WrapperPlayClientInteractEntity(event);
             WrapperPlayClientInteractEntity.InteractAction action = interactEntity.getAction();
             if (action == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
                 int targetEntityId = interactEntity.getEntityId();
-                User targetPlayer = null;
-                for (User player : Main.USERS) {
-                    if (player.getEntityId() == targetEntityId) {
-                        targetPlayer = player;
+                Player targetPlayer = null;
+                for (Player p : Main.PLAYERS) {
+                    if (p.getEntityId() == targetEntityId) {
+                        targetPlayer = p;
                         break;
                     }
                 }
@@ -123,8 +123,8 @@ public class InputListener implements PacketListener {
                             WrapperPlayServerEntityAnimation.EntityAnimationType.CRITICAL_EFFECT);
                     //TODO Velocity calculation
                     //TODO Health system
-                    user.sendPacket(animation);
-                    user.sendPacket(animation2);
+                    player.sendPacket(animation);
+                    player.sendPacket(animation2);
                 }
             }
         }
@@ -132,21 +132,21 @@ public class InputListener implements PacketListener {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
-        User user = (User) event.getPlayer();
+        Player player = (Player) event.getPlayer();
         if (event.getPacketType() == PacketType.Play.Server.HELD_ITEM_CHANGE) {
             WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(event);
             int slot = heldItemChange.getSlot();
-            user.currentSlot = slot;
-            @Nullable ItemStack item = user.getHotbarIndex(slot);
-            for (User player : Main.USERS) {
-                if (player.getEntityId() != user.getEntityId()) {
+            player.currentSlot = slot;
+            @Nullable ItemStack item = player.getHotbarIndex(slot);
+            for (Player p : Main.PLAYERS) {
+                if (p.getEntityId() != player.getEntityId()) {
                     List<Equipment> equipment = new ArrayList<>();
                     if (item == null) {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(64).build();
                     }
                     equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
-                    WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(user.getEntityId(), equipment);
-                    player.sendPacket(equipmentPacket);
+                    WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(player.getEntityId(), equipment);
+                    p.sendPacket(equipmentPacket);
                 }
             }
         }

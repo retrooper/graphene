@@ -1,12 +1,13 @@
 package com.github.graphene.handler;
 
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.graphene.util.ServerUtil;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
 import com.github.retrooper.packetevents.netty.channel.ChannelHandlerContextAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -14,17 +15,19 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 
 public class PacketDecoder extends ByteToMessageDecoder {
-    public final User user;
+    public User user;
+    public final Player player;
 
-    public PacketDecoder(User user) {
+    public PacketDecoder(User user, Player player) {
         this.user = user;
+        this.player = player;
     }
 
     public void handle(ChannelHandlerContextAbstract ctx, ByteBufAbstract byteBuf, List<Object> output) {
         ByteBufAbstract transformedBuf = ctx.alloc().buffer().writeBytes(byteBuf);
         try {
             int firstReaderIndex = transformedBuf.readerIndex();
-            PacketReceiveEvent packetReceiveEvent = new PacketReceiveEvent(user.getState(), ctx.channel(), user, transformedBuf);
+            PacketReceiveEvent packetReceiveEvent = new PacketReceiveEvent(player.getState(), ctx.channel(), user, player, transformedBuf);
             int readerIndex = transformedBuf.readerIndex();
             PacketEvents.getAPI().getEventManager().callEvent(packetReceiveEvent, () -> transformedBuf.readerIndex(readerIndex));
             if (!packetReceiveEvent.isCancelled()) {
@@ -54,8 +57,8 @@ public class PacketDecoder extends ByteToMessageDecoder {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        if (user.getState() == ConnectionState.PLAY) {
-            ServerUtil.handlePlayerLeave(user);
+        if (player.getState() == ConnectionState.PLAY) {
+            ServerUtil.handlePlayerLeave(player);
         }
         super.channelInactive(ctx);
     }

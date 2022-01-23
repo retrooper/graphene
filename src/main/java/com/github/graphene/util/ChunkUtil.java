@@ -1,7 +1,7 @@
 package com.github.graphene.util;
 
 import com.github.graphene.Main;
-import com.github.graphene.user.User;
+import com.github.graphene.player.Player;
 import com.github.graphene.wrapper.play.server.WrapperPlayServerChunkData_1_18;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
@@ -72,7 +72,7 @@ public class ChunkUtil {
         }
     }
 
-    public static void sendChunkColumns(User user) {
+    public static void sendChunkColumns(Player player) {
         for (Vector2i chunkCoords : Main.CHUNKS.keySet()) {
             Column column = Main.CHUNKS.get(chunkCoords);
             WrapperPlayServerChunkData_1_18 chunkData = new WrapperPlayServerChunkData_1_18(column);
@@ -85,7 +85,7 @@ public class ChunkUtil {
             chunkData.emptyBlockLightMask = new BitSet(0);
             chunkData.skyLightArray = new byte[0][0];//2048 for second
             chunkData.blockLightArray = new byte[0][0];//2048 for second
-            user.sendPacket(chunkData);
+            player.sendPacket(chunkData);
         }
     }
 
@@ -129,7 +129,7 @@ public class ChunkUtil {
         return column;
     }
 
-    private static void sendChunks(User user, int chunkX, int chunkZ) {
+    private static void sendChunks(Player player, int chunkX, int chunkZ) {
         //These chunks go upwards
         Chunk_v1_18[] chunks = new Chunk_v1_18[16];
         for (int i = 0; i < chunks.length; i++) {
@@ -164,6 +164,6 @@ public class ChunkUtil {
         chunkData.emptyBlockLightMask = new BitSet(0);
         chunkData.skyLightArray = new byte[0][0];//2048 for second
         chunkData.blockLightArray = new byte[0][0];//2048 for second
-        user.sendPacket(chunkData);
+        player.sendPacket(chunkData);
     }
 }
