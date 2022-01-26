@@ -55,7 +55,6 @@ public class JoinManager {
     public static void handleJoin(User user, Player player) {
         Location spawnLocation = new Location(6, 1, 6, 0.0f, 0.0f);
         player.setEntityInformation(new EntityInformation(spawnLocation));
-        ;
         List<String> worldNames = new ArrayList<>();
         worldNames.add("minecraft:overworld");
         worldNames.add("minecraft:the_nether");

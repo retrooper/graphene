@@ -4,10 +4,8 @@ import com.github.graphene.Main;
 import com.github.graphene.handler.encryption.PacketDecryptionHandler;
 import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.player.Player;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -95,7 +93,6 @@ public class LoginListener implements PacketListener {
                     //Since we're not in online mode, we just inform the client that they have successfully logged in.
                     WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
                     player.sendPacket(loginSuccess);
-                    user.setConnectionState(ConnectionState.PLAY);
                     JoinManager.handleJoin(user, player);
                 } else {
                     player.kick("A user with the username " + username + " is already logged in.");
@@ -187,7 +184,6 @@ public class LoginListener implements PacketListener {
                     //Note: The login success packet will be encrypted here.
                     WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
                     player.sendPacket(loginSuccess);
-                    user.setConnectionState(ConnectionState.PLAY);
                     JoinManager.handleJoin(user, player);
                 } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
                         | InvalidKeyException | InvalidAlgorithmParameterException ex) {

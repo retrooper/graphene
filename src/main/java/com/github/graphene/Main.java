@@ -41,7 +41,7 @@ public class Main {
     public static volatile boolean shouldRunKeepAliveLoop = true;
     public static String SERVER_VERSION_NAME;
     public static int SERVER_PROTOCOL_VERSION;
-    public static final int MAX_PLAYERS = 100;
+    public static final int MAX_PLAYERS = 1000;
     public static final String SERVER_DESCRIPTION = "Graphene Server";
     public static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
     //Generate 1024 bit RSA keypair
