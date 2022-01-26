@@ -9,10 +9,7 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import com.github.retrooper.packetevents.protocol.player.GameMode;
-import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
-import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.protocol.player.*;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
@@ -30,8 +27,6 @@ import java.util.UUID;
 
 public class Player {
     private final Channel channel;
-    private ConnectionState state;
-    private ClientVersion clientVersion;
     private final int entityID = Main.ENTITIES++;
     private GameMode gameMode = GameMode.SURVIVAL;
     private GameMode previousGameMode = null;
@@ -48,10 +43,13 @@ public class Player {
     public final ItemStack[] inventory = new ItemStack[45];
     public int currentSlot;
 
-    public Player(Channel channel, ConnectionState state) {
+    public Player(Channel channel) {
         this.channel = channel;
-        this.state = state;
         this.clientSettings = new ClientSettings("", 0, new HashSet<>(), WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
+    }
+
+    public Player(User user) {
+        this((Channel) user.getChannel().rawChannel());
     }
 
     @Nullable
@@ -86,22 +84,6 @@ public class Player {
 
     public Channel getChannel() {
         return channel;
-    }
-
-    public ConnectionState getState() {
-        return state;
-    }
-
-    public void setState(ConnectionState state) {
-        this.state = state;
-    }
-
-    public ClientVersion getClientVersion() {
-        return clientVersion;
-    }
-
-    public void setClientVersion(ClientVersion clientVersion) {
-        this.clientVersion = clientVersion;
     }
 
     public int getEntityId() {

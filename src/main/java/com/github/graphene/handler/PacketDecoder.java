@@ -27,7 +27,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
         ByteBufAbstract transformedBuf = ctx.alloc().buffer().writeBytes(byteBuf);
         try {
             int firstReaderIndex = transformedBuf.readerIndex();
-            PacketReceiveEvent packetReceiveEvent = new PacketReceiveEvent(player.getState(), ctx.channel(), user, player, transformedBuf);
+            PacketReceiveEvent packetReceiveEvent = new PacketReceiveEvent(ctx.channel(), user, player, transformedBuf);
             int readerIndex = transformedBuf.readerIndex();
             PacketEvents.getAPI().getEventManager().callEvent(packetReceiveEvent, () -> transformedBuf.readerIndex(readerIndex));
             if (!packetReceiveEvent.isCancelled()) {
@@ -46,7 +46,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> out) {
-        if (byteBuf.readableBytes() != 0) {
+        if (byteBuf.isReadable()) {
             try {
                 handle(PacketEvents.getAPI().getNettyManager().wrapChannelHandlerContext(ctx), PacketEvents.getAPI().getNettyManager().wrapByteBuf(byteBuf), out);
             } catch (Exception e) {
@@ -57,9 +57,10 @@ public class PacketDecoder extends ByteToMessageDecoder {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        if (player.getState() == ConnectionState.PLAY) {
+        if (user.getConnectionState() == ConnectionState.PLAY) {
             ServerUtil.handlePlayerLeave(player);
         }
+        ServerUtil.handlePlayerQuit(user, player);
         super.channelInactive(ctx);
     }
 

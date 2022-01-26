@@ -62,6 +62,7 @@ public class Main {
     //Store last entity positions
     public static void main(String[] args) throws Exception {
         PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
+        PacketEvents.getAPI().getSettings().debug(true).bStats(true);
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true);
@@ -92,9 +93,9 @@ public class Main {
                         @Override
                         public void initChannel(@NotNull SocketChannel channel) throws Exception {
                             ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(channel);
-                            User user = new User(ch, new UserProfile(null, null));
-                            PacketEvents.getAPI().getPlayerManager().setUser(ch, user);
-                            Player player = new Player(channel, ConnectionState.HANDSHAKING);
+                            User user = new User(ch, ConnectionState.HANDSHAKING, null, new UserProfile(null, null));
+                            PacketEvents.getAPI().getPlayerManager().USERS.put(ch, user);
+                            Player player = new Player(user);
                             PacketDecoder decoder = new PacketDecoder(user, player);
                             PacketEncoder encoder = new PacketEncoder(user, player);
                             channel.pipeline()

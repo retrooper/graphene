@@ -13,7 +13,7 @@ import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
-import com.github.retrooper.packetevents.protocol.world.Difficulty;
+import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -52,66 +52,56 @@ public class JoinManager {
         DIMENSION_CODEC = dimensionCodecBuffer.readNBT();
     }
 
-    public static void handleJoin(Player player) {
-        Main.WORKER_THREADS.execute(() -> {
-            Location spawnLocation = new Location(6, 1, 6, 0.0f, 0.0f);
-            player.setEntityInformation(new EntityInformation(spawnLocation));
+    public static void handleJoin(User user, Player player) {
+        Location spawnLocation = new Location(6, 1, 6, 0.0f, 0.0f);
+        player.setEntityInformation(new EntityInformation(spawnLocation));
+        ;
+        List<String> worldNames = new ArrayList<>();
+        worldNames.add("minecraft:overworld");
+        worldNames.add("minecraft:the_nether");
+        worldNames.add("minecraft:the_end");
+        long hashedSeed = 0L;
+        //Send join game packet
+        WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(player.getEntityId(),
+                false, player.getGameMode(), player.getPreviousGameMode(),
+                worldNames, DIMENSION_CODEC, DIMENSION, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS, 20, 20, false, true, false, true);
+        player.sendPacket(joinGame);
 
-            List<String> worldNames = new ArrayList<>();
-            worldNames.add("minecraft:overworld");
-            worldNames.add("minecraft:the_nether");
-            worldNames.add("minecraft:the_end");
-            long hashedSeed = 0L;
-            //Send join game packet
-            WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(player.getEntityId(),
-                    false, player.getGameMode(), player.getPreviousGameMode(),
-                    worldNames, DIMENSION_CODEC, DIMENSION, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS, 20, 20, false, true, false, true);
-            player.sendPacket(joinGame);
+        //Send optional plugin message packet with our server's brand
+        String brandName = "Graphene";
+        PacketWrapper<?> brandNameBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
+        brandNameBuffer.writeByteArray(brandName.getBytes());
+        byte[] brandNameBytes = PacketEvents.getAPI().getNettyManager().asByteArray(brandNameBuffer.getBuffer());
+        WrapperPlayServerPluginMessage pluginMessage = new WrapperPlayServerPluginMessage("minecraft:brand", brandNameBytes);
+        player.sendPacket(pluginMessage);
+        //Send player abilities
+        WrapperPlayServerPlayerAbilities abilities = new WrapperPlayServerPlayerAbilities(false, false, false, false, 0.05f, 0.1f);
+        player.sendPacket(abilities);
 
-            //Send optional plugin message packet with our server's brand
-            String brandName = "Graphene";
-            PacketWrapper<?> brandNameBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
-            brandNameBuffer.writeByteArray(brandName.getBytes());
-            byte[] brandNameBytes = PacketEvents.getAPI().getNettyManager().asByteArray(brandNameBuffer.getBuffer());
-            WrapperPlayServerPluginMessage pluginMessage = new WrapperPlayServerPluginMessage("minecraft:brand", brandNameBytes);
-            player.sendPacket(pluginMessage);
-            //Send server difficulty packet
-            WrapperPlayServerDifficulty difficulty = new WrapperPlayServerDifficulty(Difficulty.HARD, false);
-            player.sendPacket(difficulty);
-            //Send player abilities
-            WrapperPlayServerPlayerAbilities abilities = new WrapperPlayServerPlayerAbilities(false, false, false, false, 0.05f, 0.1f);
-            player.sendPacket(abilities);
+        ServerUtil.handlePlayerJoin(user, player);
 
-            ServerUtil.handlePlayerJoin(player);
+        //Send held item change
+        player.setHotbarIndex(0, ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(1).build());
+        player.setHotbarIndex(1, ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1)
+                .addEnchantment(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(3).build())
+                .build());
+        player.setHotbarIndex(2, ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build());
+        player.updateHotbar();
+        WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);
+        player.sendPacket(heldItemChange);
+        //Send entity status
+        WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(player.getEntityId(), 28);
+        player.sendPacket(entityStatus);
 
-            //Send held item change
-            player.setHotbarIndex(0, ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(1).build());
-            player.setHotbarIndex(1, ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1)
-                    .addEnchantment(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(3).build())
-                    .build());
-            player.setHotbarIndex(2, ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build());
-            player.updateHotbar();
-            WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);
-            player.sendPacket(heldItemChange);
-            //Send entity status
-            WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(player.getEntityId(), 28);
-            player.sendPacket(entityStatus);
+        ChunkUtil.sendChunkColumns(player);
 
-            WrapperPlayServerUpdateHealth updateHealth = new WrapperPlayServerUpdateHealth(player.getEntityInformation().getHealth(),
-                    player.getEntityInformation().getFood(), player.getEntityInformation().getSaturation());
-            player.sendPacket(updateHealth);
-
-            ChunkUtil.sendChunkColumns(player);
+        //Actually spawn them into the world
+        WrapperPlayServerPlayerPositionAndLook positionAndLook =
+                new WrapperPlayServerPlayerPositionAndLook(spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(), spawnLocation.getYaw(), spawnLocation.getPitch(), (byte) 0, 0, true);
+        player.sendPacket(positionAndLook);
 
 
-            //Actually spawn them into the world
-            WrapperPlayServerPlayerPositionAndLook positionAndLook = 
-                    new WrapperPlayServerPlayerPositionAndLook(spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(), spawnLocation.getYaw(), spawnLocation.getPitch(), (byte) 0, 0, true);
-            player.sendPacket(positionAndLook);
-
-
-            EntityHandler.onLogin(player);
-        });
+        EntityHandler.onLogin(player);
     }
 
 }

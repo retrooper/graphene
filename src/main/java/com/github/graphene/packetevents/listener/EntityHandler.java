@@ -34,10 +34,11 @@ import java.util.Queue;
 public class EntityHandler implements PacketListener {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
+        User user = event.getUser();
         Player player = (Player) event.getPlayer();
         assert player != null;
         EntityInformation entityInformation = player.getEntityInformation();
-        if (player.getState() == ConnectionState.PLAY) {
+        if (user.getConnectionState() == ConnectionState.PLAY) {
             if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
                 WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
                 entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());

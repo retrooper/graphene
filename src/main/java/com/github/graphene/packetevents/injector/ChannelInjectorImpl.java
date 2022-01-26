@@ -20,14 +20,14 @@ public class ChannelInjectorImpl implements ChannelInjector {
     public @Nullable ConnectionState getConnectionState(ChannelAbstract channel) {
         Channel ch = (Channel) channel.rawChannel();
         PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
-        return decoder.player.getState();
+        return decoder.user.getConnectionState();
     }
 
     @Override
-    public void changeConnectionState(ChannelAbstract channel, @Nullable ConnectionState packetState) {
+    public void changeConnectionState(ChannelAbstract channel, @Nullable ConnectionState connectionState) {
         Channel ch = (Channel) channel.rawChannel();
         PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
-        decoder.player.setState(packetState);
+        decoder.user.setConnectionState(connectionState);
     }
 
     @Override

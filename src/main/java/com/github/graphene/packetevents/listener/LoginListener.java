@@ -10,6 +10,7 @@ import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
+import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.AdventureSerializer;
 import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
@@ -55,6 +56,7 @@ public class LoginListener implements PacketListener {
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
+        User user = event.getUser();
         Player player = (Player) event.getPlayer();
         if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
             WrapperHandshakingClientHandshake handshake = new WrapperHandshakingClientHandshake(event);
@@ -63,8 +65,6 @@ public class LoginListener implements PacketListener {
             //The client is attempting to log in.
             WrapperLoginClientLoginStart start = new WrapperLoginClientLoginStart(event);
             String username = start.getUsername();
-            //Map the player usernames with their netty channels
-            PacketEvents.getAPI().getPlayerManager().CHANNELS.put(username, event.getChannel());
             //If online mode is set to false, we just generate a UUID based on their username.
             UUID uuid = isOnlineMode() ? null : UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
             player.setUserProfile(new UserProfile(uuid, username));
@@ -95,8 +95,8 @@ public class LoginListener implements PacketListener {
                     //Since we're not in online mode, we just inform the client that they have successfully logged in.
                     WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
                     player.sendPacket(loginSuccess);
-                    player.setState(ConnectionState.PLAY);
-                    JoinManager.handleJoin(player);
+                    user.setConnectionState(ConnectionState.PLAY);
+                    JoinManager.handleJoin(user, player);
                 } else {
                     player.kick("A user with the username " + username + " is already logged in.");
                 }
@@ -187,8 +187,8 @@ public class LoginListener implements PacketListener {
                     //Note: The login success packet will be encrypted here.
                     WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
                     player.sendPacket(loginSuccess);
-                    player.setState(ConnectionState.PLAY);
-                    JoinManager.handleJoin(player);
+                    user.setConnectionState(ConnectionState.PLAY);
+                    JoinManager.handleJoin(user, player);
                 } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
                         | InvalidKeyException | InvalidAlgorithmParameterException ex) {
                     ex.printStackTrace();

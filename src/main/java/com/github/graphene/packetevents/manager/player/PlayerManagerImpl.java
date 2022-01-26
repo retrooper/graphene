@@ -18,16 +18,17 @@ public class PlayerManagerImpl implements PlayerManager {
     //TODO See if we can still put it in the map
     @Override
     public @NotNull ClientVersion getClientVersion(@NotNull Object player) {
-        return ((Player) player).getClientVersion();
+        return getUser(player).getClientVersion();
     }
 
     @Override
     public ClientVersion getClientVersion(ChannelAbstract channel) {
-        ClientVersion version = CLIENT_VERSIONS.get(channel);
+        User user = getUser(channel);
+        ClientVersion version = user.getClientVersion();
         if (version == null || !version.isResolved()) {
             int protocolVersion = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
             version = ClientVersion.getClientVersionByProtocolVersion(protocolVersion);
-            CLIENT_VERSIONS.put(channel, version);
+            user.setClientVersion(version);
         }
         return version;
     }

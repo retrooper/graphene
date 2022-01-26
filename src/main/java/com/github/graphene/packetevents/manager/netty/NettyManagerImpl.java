@@ -65,7 +65,7 @@ public class NettyManagerImpl implements NettyManager {
     }
 
     @Override
-    public ChannelAbstract wrapChannel(Object channel) {
+    public ChannelAbstract wrapChannel0(Object channel) {
         return new ChannelImpl(channel);
     }
 
