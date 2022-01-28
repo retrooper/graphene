@@ -80,7 +80,7 @@ public class Main {
         Main.LOGGER.info("Starting Graphene Server. Version: " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
 
         Main.LOGGER.info("Preparing chunks...");
-        ChunkUtil.generateChunkColumns(2, 1, true);
+        ChunkUtil.generateChunkColumns(1, 1, true);
         Main.LOGGER.info("Binding to port... " + PORT);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();

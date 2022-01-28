@@ -5,6 +5,7 @@ import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.npc.NPC;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
@@ -31,6 +32,9 @@ public class ServerUtil {
     }
 
     public static void handlePlayerQuit(User user, Player player) {
+        if (user.getConnectionState() == ConnectionState.PLAY) {
+            ServerUtil.handlePlayerLeave(player);
+        }
         PacketEvents.getAPI().getNettyManager().CHANNEL_MAP.remove(user.getChannel().rawChannel());
         PacketEvents.getAPI().getPlayerManager().USERS.remove(user.getChannel());
         Main.PLAYERS.remove(player);

@@ -25,7 +25,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
         this.player = player;
     }
 
-    public void handle(ChannelHandlerContextAbstract ctx, ByteBufAbstract byteBuf) {
+    public void read(ChannelHandlerContext ctx, ByteBuf byteBuf) {
         int firstReaderIndex = byteBuf.readerIndex();
         PacketSendEvent packetSendEvent = new PacketSendEvent(ctx.channel(), user, player, byteBuf);
         int readerIndex = byteBuf.readerIndex();
@@ -59,7 +59,6 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
         if (!msg.isReadable())return;
         out.writeBytes(msg);
-        handle(PacketEvents.getAPI().getNettyManager().wrapChannelHandlerContext(ctx),
-                PacketEvents.getAPI().getNettyManager().wrapByteBuf(out));
+        read(ctx, out);
     }
 }

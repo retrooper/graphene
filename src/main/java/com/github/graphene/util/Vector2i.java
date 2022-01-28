@@ -25,9 +25,20 @@ public class Vector2i {
     }
 
     @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (x);
+        result = prime * result + (z);
+        return result;
+    }
+
+    @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Vector2i) {
-            return ((Vector2i) obj).x == x && ((Vector2i) obj).z == z;
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (obj instanceof Vector2i other) {
+            return x == other.x && z == other.z;
         }
         return false;
     }

@@ -63,8 +63,9 @@ public class JoinManager {
         //Send join game packet
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(player.getEntityId(),
                 false, player.getGameMode(), player.getPreviousGameMode(),
-                worldNames, DIMENSION_CODEC, DIMENSION, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS, 20, 20, false, true, false, true);
-        player.sendPacket(joinGame);
+                worldNames, DIMENSION_CODEC, DIMENSION, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS,
+                20, 20, false, true, false, true);
+        user.sendPacket(joinGame);
 
         //Send optional plugin message packet with our server's brand
         String brandName = "Graphene";

@@ -20,23 +20,16 @@ import java.util.List;
 public class ChunkUtil {
     @Nullable
     public static Column getColumnByPosition(Vector3i blockPosition) {
-        int chunkX = MathUtil.floor(blockPosition.getX() / 16.0);
-        int chunkZ = MathUtil.floor(blockPosition.getZ() / 16.0);
-        Vector2i chunkCoord = new Vector2i(chunkX, chunkZ);
-        for (Vector2i c : Main.CHUNKS.keySet()) {
-            if (c.equals(chunkCoord)) {
-                return Main.CHUNKS.get(c);
-            }
-        }
-        return null;
+        Vector2i chunkCoord = new Vector2i(MathUtil.floor(blockPosition.getX() / 16.0), MathUtil.floor(blockPosition.getZ() / 16.0));
+        return Main.CHUNKS.get(chunkCoord);
     }
 
     @Nullable
     public static BaseChunk getChunkByPosition(Vector3i blockPosition) {
         Column column = getColumnByPosition(blockPosition);
         if (column != null) {
-            int chunkIndex = MathUtil.floor(blockPosition.getY() / 16.0);
-            return column.getChunks()[chunkIndex];
+            //TODO Work on this
+            return column.getChunks()[0];
         }
         return null;
     }
@@ -45,12 +38,9 @@ public class ChunkUtil {
     public static WrappedBlockState getBlockStateByPosition(Vector3i blockPosition) {
         Column column = getColumnByPosition(blockPosition);
         if (column != null) {
-            int chunkIndex = MathUtil.floor(blockPosition.getY() / 16.0);
-            BaseChunk chunk = column.getChunks()[chunkIndex];
+            //TODO Work on this
+            BaseChunk chunk = column.getChunks()[0];
             int y = blockPosition.getY();
-            for (int i = 0; i < chunkIndex; i++) {
-                y -= 16;
-            }
             //TODO Deal with far x and z
             return chunk.get(blockPosition.getX(), y, blockPosition.getZ());
         }
@@ -61,20 +51,16 @@ public class ChunkUtil {
         //TODO Sometimes placing block on top of grass just makes it dissapear, its probably the y + 1 thing thatwe removed
         Column column = getColumnByPosition(blockPosition);
         if (column != null) {
-            int chunkIndex = MathUtil.floor(blockPosition.getY() / 16.0);
-            BaseChunk chunk = column.getChunks()[chunkIndex];
+            //TODO Work on this
+            BaseChunk chunk = column.getChunks()[0];
             int y = blockPosition.getY();
-            for (int i = 0; i < chunkIndex; i++) {
-                y -= 16;
-            }
             //TODO Deal with far x and z
             chunk.set(blockPosition.getX(), y, blockPosition.getZ(), blockState.getGlobalId());
         }
     }
 
     public static void sendChunkColumns(Player player) {
-        for (Vector2i chunkCoords : Main.CHUNKS.keySet()) {
-            Column column = Main.CHUNKS.get(chunkCoords);
+        for (Column column : Main.CHUNKS.values()) {
             WrapperPlayServerChunkData_1_18 chunkData = new WrapperPlayServerChunkData_1_18(column);
             // Should be set to false when updating a chunk instead of sending a new one.
             chunkData.trustEdges = true;

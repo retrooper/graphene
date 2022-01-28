@@ -103,97 +103,97 @@ public class LoginListener implements PacketListener {
         else if (event.getPacketType() == PacketType.Login.Client.ENCRYPTION_RESPONSE) {
             WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(event);
             // Authenticate and handle player connection on our worker threads
-            //Graphene.WORKER_THREADS.execute(() -> {
-            //Decrypt the verify token
-            byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Main.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
-            //Private key from the server's key pair
-            PrivateKey privateKey = Main.KEY_PAIR.getPrivate();
-            //Decrypt the shared secret
-            byte[] sharedSecret = MinecraftEncryptionUtil.decrypt(privateKey.getAlgorithm(), privateKey, encryptionResponse.getEncryptedSharedSecret());
-            MessageDigest digest;
-            try {
-                digest = MessageDigest.getInstance("SHA-1");
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-                player.forceDisconnect();
-                return; // basically asserts that digest must be not null
-            }
-            digest.update(player.getServerId().getBytes(StandardCharsets.UTF_8));
-            digest.update(sharedSecret);
-            digest.update(Main.KEY_PAIR.getPublic().getEncoded());
-            //We generate a server id hash that will be used in our web request to mojang's session server.
-            String serverIdHash = new BigInteger(digest.digest()).toString(16);
-            //Make sure the decrypted verify token from the client is the same one we sent out earlier.
-            if (Arrays.equals(player.getVerifyToken(), verifyToken)) {
-                //GET web request using our server id hash.
+            Main.WORKER_THREADS.execute(() -> {
+                //Decrypt the verify token
+                byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Main.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
+                //Private key from the server's key pair
+                PrivateKey privateKey = Main.KEY_PAIR.getPrivate();
+                //Decrypt the shared secret
+                byte[] sharedSecret = MinecraftEncryptionUtil.decrypt(privateKey.getAlgorithm(), privateKey, encryptionResponse.getEncryptedSharedSecret());
+                MessageDigest digest;
                 try {
-                    URL url = new URL("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + player.getUsername() + "&serverId=" + serverIdHash);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestProperty("Authorization", null);
-                    connection.setRequestMethod("GET");
-                    if (connection.getResponseCode() == 204) {
-                        Main.LOGGER.info("Failed to authenticate " + player.getUsername() + "!");
-                        player.kick("Failed to authenticate your connection.");
-                        return;
-                    }
-                    BufferedReader in = new BufferedReader(
-                            new InputStreamReader(connection.getInputStream()));
-                    String inputLine;
-                    StringBuilder sb = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        sb.append(inputLine);
-                    }
-                    in.close();
-                    //Parse the json response we got from the web request.
-                    JsonObject jsonObject = AdventureSerializer.GSON.serializer().fromJson(sb.toString(), JsonObject.class);
-
-                    String username = jsonObject.get("name").getAsString();
-                    String rawUUID = jsonObject.get("id").getAsString();
-                    UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
-                    JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
-                    for (Player lPlayer : Main.PLAYERS) {
-                        if (lPlayer.getUsername().equals(username)) {
-                            lPlayer.kick("You logged in from another location!");
-                        }
-                    }
-                    //Update our game profile, feed it with our real UUID, we've been authenticated.
-                    UserProfile profile = player.getUserProfile();
-                    profile.setUUID(uuid);
-                    profile.setName(username);
-                    for (JsonElement element : textureProperties) {
-                        JsonObject property = element.getAsJsonObject();
-
-                        String name = property.get("name").getAsString();
-                        String value = property.get("value").getAsString();
-                        String signature = property.get("signature").getAsString();
-
-                        profile.getTextureProperties().add(new TextureProperty(name, value, signature));
-                    }
-                    //From now on, all packets will be decrypted and encrypted.
-                    ChannelPipeline pipeline = player.getChannel().pipeline();
-                    SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
-                    Cipher decryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
-                    decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
-                    //Add the decryption handler
-                    pipeline.replace("decryption_handler", "decryption_handler", new PacketDecryptionHandler(decryptCipher));
-                    Cipher encryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
-                    encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
-                    //Add the encryption handler
-                    pipeline.replace("encryption_handler", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
-                    //We now inform the client that they have successfully logged in.
-                    //Note: The login success packet will be encrypted here.
-                    WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
-                    player.sendPacket(loginSuccess);
-                    JoinManager.handleJoin(user, player);
-                } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
-                        | InvalidKeyException | InvalidAlgorithmParameterException ex) {
-                    ex.printStackTrace();
+                    digest = MessageDigest.getInstance("SHA-1");
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                    player.forceDisconnect();
+                    return; // basically asserts that digest must be not null
                 }
-            } else {
-                Main.LOGGER.warning("Failed to authenticate " + player.getUsername() + ", because they replied with an invalid verify token!");
-                player.forceDisconnect();
-            }
-            // });
+                digest.update(player.getServerId().getBytes(StandardCharsets.UTF_8));
+                digest.update(sharedSecret);
+                digest.update(Main.KEY_PAIR.getPublic().getEncoded());
+                //We generate a server id hash that will be used in our web request to mojang's session server.
+                String serverIdHash = new BigInteger(digest.digest()).toString(16);
+                //Make sure the decrypted verify token from the client is the same one we sent out earlier.
+                if (Arrays.equals(player.getVerifyToken(), verifyToken)) {
+                    //GET web request using our server id hash.
+                    try {
+                        URL url = new URL("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=" + player.getUsername() + "&serverId=" + serverIdHash);
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        connection.setRequestProperty("Authorization", null);
+                        connection.setRequestMethod("GET");
+                        if (connection.getResponseCode() == 204) {
+                            Main.LOGGER.info("Failed to authenticate " + player.getUsername() + "!");
+                            player.kick("Failed to authenticate your connection.");
+                            return;
+                        }
+                        BufferedReader in = new BufferedReader(
+                                new InputStreamReader(connection.getInputStream()));
+                        String inputLine;
+                        StringBuilder sb = new StringBuilder();
+                        while ((inputLine = in.readLine()) != null) {
+                            sb.append(inputLine);
+                        }
+                        in.close();
+                        //Parse the json response we got from the web request.
+                        JsonObject jsonObject = AdventureSerializer.GSON.serializer().fromJson(sb.toString(), JsonObject.class);
+
+                        String username = jsonObject.get("name").getAsString();
+                        String rawUUID = jsonObject.get("id").getAsString();
+                        UUID uuid = UUIDUtil.fromStringWithoutDashes(rawUUID);
+                        JsonArray textureProperties = jsonObject.get("properties").getAsJsonArray();
+                        for (Player lPlayer : Main.PLAYERS) {
+                            if (lPlayer.getUsername().equals(username)) {
+                                lPlayer.kick("You logged in from another location!");
+                            }
+                        }
+                        //Update our game profile, feed it with our real UUID, we've been authenticated.
+                        UserProfile profile = player.getUserProfile();
+                        profile.setUUID(uuid);
+                        profile.setName(username);
+                        for (JsonElement element : textureProperties) {
+                            JsonObject property = element.getAsJsonObject();
+
+                            String name = property.get("name").getAsString();
+                            String value = property.get("value").getAsString();
+                            String signature = property.get("signature").getAsString();
+
+                            profile.getTextureProperties().add(new TextureProperty(name, value, signature));
+                        }
+                        //From now on, all packets will be decrypted and encrypted.
+                        ChannelPipeline pipeline = player.getChannel().pipeline();
+                        SecretKey sharedSecretKey = new SecretKeySpec(sharedSecret, "AES");
+                        Cipher decryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
+                        decryptCipher.init(Cipher.DECRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
+                        //Add the decryption handler
+                        pipeline.replace("decryption_handler", "decryption_handler", new PacketDecryptionHandler(decryptCipher));
+                        Cipher encryptCipher = Cipher.getInstance("AES/CFB8/NoPadding");
+                        encryptCipher.init(Cipher.ENCRYPT_MODE, sharedSecretKey, new IvParameterSpec(sharedSecret));
+                        //Add the encryption handler
+                        pipeline.replace("encryption_handler", "encryption_handler", new PacketEncryptionHandler(encryptCipher));
+                        //We now inform the client that they have successfully logged in.
+                        //Note: The login success packet will be encrypted here.
+                        WrapperLoginServerLoginSuccess loginSuccess = new WrapperLoginServerLoginSuccess(player.getUserProfile());
+                        player.sendPacket(loginSuccess);
+                        JoinManager.handleJoin(user, player);
+                    } catch (IOException | NoSuchPaddingException | NoSuchAlgorithmException
+                            | InvalidKeyException | InvalidAlgorithmParameterException ex) {
+                        ex.printStackTrace();
+                    }
+                } else {
+                    Main.LOGGER.warning("Failed to authenticate " + player.getUsername() + ", because they replied with an invalid verify token!");
+                    player.forceDisconnect();
+                }
+            });
         }
     }
 }
