@@ -23,13 +23,10 @@ repositories {
 }
 
 shadowJar {
+    minimize()
 }
 
 dependencies {
-    implementation 'net.kyori:adventure-api:4.9.3'
-    implementation 'net.kyori:adventure-text-serializer-gson:4.9.3'
-    implementation 'net.kyori:adventure-text-serializer-legacy:4.9.3'
-    implementation 'com.google.code.gson:gson:2.8.9'
     compileOnly 'org.jetbrains:annotations:22.0.0'
     implementation 'io.netty:netty-all:4.1.72.Final'
     implementation 'com.github.retrooper.packetevents:api:2.0-SNAPSHOT'
