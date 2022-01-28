@@ -307,8 +307,6 @@ public class EntityHandler implements PacketListener {
                         .onFire(entityInformation.isOnFire())
                         .hasGravity(true)
                         .invisible(entityInformation.isInvisible())
-                        .customName(Component.text("noice").color(NamedTextColor.RED).asComponent())
-                        .customNameVisible(true)
                         .pose(entityPose).build();
         return new WrapperPlayServerEntityMetadata(targetEntityId, playerDataProvider.encode());
     }
