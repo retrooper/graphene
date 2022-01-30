@@ -5,7 +5,7 @@ import com.github.graphene.handler.encryption.PacketDecryptionHandler;
 import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.User;

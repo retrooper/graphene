@@ -3,7 +3,7 @@ package com.github.graphene.packetevents.listener;
 import com.github.graphene.player.Player;
 import com.github.graphene.util.entity.UpdateType;
 import com.github.retrooper.packetevents.event.PacketListener;
-import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
 public class KeepAliveListener implements PacketListener {

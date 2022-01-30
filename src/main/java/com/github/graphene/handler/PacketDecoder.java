@@ -3,11 +3,9 @@ package com.github.graphene.handler;
 import com.github.graphene.player.Player;
 import com.github.graphene.util.ServerUtil;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.impl.PacketReceiveEvent;
-import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
-import com.github.retrooper.packetevents.netty.channel.ChannelHandlerContextAbstract;
-import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.util.EventCreationUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -24,23 +22,28 @@ public class PacketDecoder extends ByteToMessageDecoder {
     }
 
     public void read(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> output) {
-        ByteBuf transformedBuf = ctx.alloc().buffer().writeBytes(byteBuf);
+        ByteBuf transformed = ctx.alloc().buffer().writeBytes(byteBuf);
         try {
-            int firstReaderIndex = transformedBuf.readerIndex();
-            PacketReceiveEvent packetReceiveEvent = new PacketReceiveEvent(ctx.channel(), user, player, transformedBuf);
-            int readerIndex = transformedBuf.readerIndex();
-            PacketEvents.getAPI().getEventManager().callEvent(packetReceiveEvent, () -> transformedBuf.readerIndex(readerIndex));
+            int firstReaderIndex = transformed.readerIndex();
+            PacketReceiveEvent packetReceiveEvent = EventCreationUtil.createReceiveEvent(ctx.channel(), user, player, transformed);
+            int readerIndex = transformed.readerIndex();
+            PacketEvents.getAPI().getEventManager().callEvent(packetReceiveEvent, () -> transformed.readerIndex(readerIndex));
             if (!packetReceiveEvent.isCancelled()) {
                 if (packetReceiveEvent.getLastUsedWrapper() != null) {
                     packetReceiveEvent.getByteBuf().clear();
                     packetReceiveEvent.getLastUsedWrapper().writeVarInt(packetReceiveEvent.getPacketId());
                     packetReceiveEvent.getLastUsedWrapper().writeData();
                 }
-                transformedBuf.readerIndex(firstReaderIndex);
-                output.add(transformedBuf.retain());
+                transformed.readerIndex(firstReaderIndex);
+                output.add(transformed.retain());
+            }
+            if (packetReceiveEvent.hasPostTasks()) {
+                for (Runnable task : packetReceiveEvent.getPostTasks()) {
+                    task.run();
+                }
             }
         } finally {
-            transformedBuf.release();
+            transformed.release();
         }
     }
 

@@ -2,10 +2,9 @@ package com.github.graphene.handler;
 
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.impl.PacketSendEvent;
-import com.github.retrooper.packetevents.netty.buffer.ByteBufAbstract;
-import com.github.retrooper.packetevents.netty.channel.ChannelHandlerContextAbstract;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.util.EventCreationUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -18,7 +17,7 @@ import java.util.List;
 public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
     public final Player player;
     public User user;
-    private List<Runnable> postTasks = new ArrayList<>();
+    private List<Runnable> promisedTasks = new ArrayList<>();
 
     public PacketEncoder(User user, Player player) {
         this.user = user;
@@ -27,7 +26,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
 
     public void read(ChannelHandlerContext ctx, ByteBuf byteBuf) {
         int firstReaderIndex = byteBuf.readerIndex();
-        PacketSendEvent packetSendEvent = new PacketSendEvent(ctx.channel(), user, player, byteBuf);
+        PacketSendEvent packetSendEvent = EventCreationUtil.createSendEvent(ctx.channel(), user, player, byteBuf);
         int readerIndex = byteBuf.readerIndex();
         PacketEvents.getAPI().getEventManager().callEvent(packetSendEvent, () -> byteBuf.readerIndex(readerIndex));
         if (!packetSendEvent.isCancelled()) {
@@ -37,15 +36,22 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
                 packetSendEvent.getLastUsedWrapper().writeData();
             }
             byteBuf.readerIndex(firstReaderIndex);
-            postTasks.addAll(packetSendEvent.getPostTasks());
+            if (packetSendEvent.hasPromisedTasks()) {
+                promisedTasks.addAll(packetSendEvent.getPromisedTasks());
+            }
+        }
+        if (packetSendEvent.hasPostTasks()) {
+            for (Runnable task : packetSendEvent.getPostTasks()) {
+                task.run();
+            }
         }
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (!postTasks.isEmpty()) {
-            List<Runnable> postTasks = new ArrayList<>(this.postTasks);
-            this.postTasks.clear();
+        if (!promisedTasks.isEmpty()) {
+            List<Runnable> postTasks = new ArrayList<>(this.promisedTasks);
+            this.promisedTasks.clear();
             promise.addListener(f -> {
                 for (Runnable task : postTasks) {
                     task.run();
