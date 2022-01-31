@@ -35,8 +35,7 @@ public class ServerUtil {
         if (user.getConnectionState() == ConnectionState.PLAY) {
             ServerUtil.handlePlayerLeave(player);
         }
-        PacketEvents.getAPI().getNettyManager().CHANNEL_MAP.remove(user.getChannel().rawChannel());
-        PacketEvents.getAPI().getPlayerManager().USERS.remove(user.getChannel());
+        PacketEvents.getAPI().getPlayerManager().clearUserData(user.getChannel(), user.getProfile().getName(), user.getProfile().getUUID());
         Main.PLAYERS.remove(player);
     }
 
@@ -72,8 +71,6 @@ public class ServerUtil {
             }
         }
         Main.LOGGER.info(player.getUsername() + " left the server.");
-        PacketEvents.getAPI().getPlayerManager().CHANNELS.remove(player.getUserProfile().getName());
-        PacketEvents.getAPI().getPlayerManager().PLAYER_ATTRIBUTES.remove(player.getUserProfile().getUUID());
     }
 
     public static void handlePlayerJoin(User user, Player player) {
