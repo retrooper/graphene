@@ -47,7 +47,7 @@ public class Main {
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
     public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    public static final int PORT = 25600;
+    public static final int PORT = 25999;
     public static final Queue<Player> PLAYERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
     public static boolean ONLINE_MODE = true;
