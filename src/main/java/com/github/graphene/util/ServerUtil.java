@@ -35,7 +35,7 @@ public class ServerUtil {
         if (user.getConnectionState() == ConnectionState.PLAY) {
             ServerUtil.handlePlayerLeave(player);
         }
-        PacketEvents.getAPI().getPlayerManager().clearUserData(user.getChannel(), user.getProfile().getName(), user.getProfile().getUUID());
+        PacketEvents.getAPI().getPlayerManager().clearUserData(user.getChannel(), player.getUsername(), user.getProfile().getUUID());
         Main.PLAYERS.remove(player);
     }
 

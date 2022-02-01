@@ -14,6 +14,9 @@ import com.github.retrooper.packetevents.protocol.item.enchantment.type.Enchantm
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.protocol.world.Difficulty;
+import com.github.retrooper.packetevents.protocol.world.Dimension;
+import com.github.retrooper.packetevents.protocol.world.DimensionType;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -24,8 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JoinManager {
-    private final static NBTCompound DIMENSION;
-    private final static NBTCompound DIMENSION_CODEC;
+    private final static NBTCompound DIMENSION_NBT;
+    private final static NBTCompound DIMENSION_CODEC_NBT;
 
     static {
         byte[] dimensionBytes = new byte[0];
@@ -37,7 +40,7 @@ public class JoinManager {
         }
         PacketWrapper<?> dimensionBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
         dimensionBuffer.buffer.writeBytes(dimensionBytes);
-        DIMENSION = dimensionBuffer.readNBT();
+        DIMENSION_NBT = dimensionBuffer.readNBT();
 
         byte[] dimensionCodecBytes = new byte[0];
         try (InputStream dimensionCodecInfo = JoinManager.class.getClassLoader().getResourceAsStream("RawCodec.bytes")) {
@@ -49,7 +52,7 @@ public class JoinManager {
 
         PacketWrapper<?> dimensionCodecBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
         dimensionCodecBuffer.buffer.writeBytes(dimensionCodecBytes);
-        DIMENSION_CODEC = dimensionCodecBuffer.readNBT();
+        DIMENSION_CODEC_NBT = dimensionCodecBuffer.readNBT();
     }
 
     public static void handleJoin(User user, Player player) {
@@ -61,9 +64,10 @@ public class JoinManager {
         worldNames.add("minecraft:the_end");
         long hashedSeed = 0L;
         //Send join game packet
+        Dimension dimension = new Dimension(DimensionType.OVERWORLD, DIMENSION_NBT);
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(player.getEntityId(),
                 false, player.getGameMode(), player.getPreviousGameMode(),
-                worldNames, DIMENSION_CODEC, DIMENSION, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS,
+                worldNames, DIMENSION_CODEC_NBT, dimension, Difficulty.NORMAL, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS,
                 20, 20, false, true, false, true);
         user.sendPacket(joinGame);
 
