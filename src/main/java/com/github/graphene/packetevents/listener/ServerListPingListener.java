@@ -6,15 +6,17 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.status.client.WrapperStatusClientPing;
 import com.github.retrooper.packetevents.wrapper.status.server.WrapperStatusServerPong;
 import com.github.retrooper.packetevents.wrapper.status.server.WrapperStatusServerResponse;
 import com.google.gson.JsonObject;
+import io.netty.channel.Channel;
 
 public class ServerListPingListener implements PacketListener {
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
-        Player player = (Player) event.getPlayer();
+        User user = event.getUser();
         if (event.getPacketType() == PacketType.Status.Client.REQUEST) {
             //This is invoked when the client opens up or refreshes the multiplayer server list menu.
             JsonObject responseComponent = new JsonObject();
@@ -37,7 +39,7 @@ public class ServerListPingListener implements PacketListener {
             responseComponent.add("description", descriptionComponent);
             //We respond by sending them information about the server.
             WrapperStatusServerResponse response = new WrapperStatusServerResponse(responseComponent);
-            player.sendPacket(response);
+            user.sendPacket(response);
         } else if (event.getPacketType() == PacketType.Status.Client.PING) {
             //The client sends us this to inform us they successfully received our response with data about the server.
             //We just respond by sending them the same packet.
@@ -45,7 +47,8 @@ public class ServerListPingListener implements PacketListener {
             long time = ping.getTime();
             WrapperStatusServerPong pong = new WrapperStatusServerPong(time);
             PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), pong);
-            player.forceDisconnect();
+            //TODO forceDisconnect to User
+            ((Channel)user.getChannel().rawChannel()).close();
         }
     }
 }
