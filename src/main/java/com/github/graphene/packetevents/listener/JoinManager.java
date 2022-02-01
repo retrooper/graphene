@@ -6,7 +6,6 @@ import com.github.graphene.player.Player;
 import com.github.graphene.util.ChunkUtil;
 import com.github.graphene.util.ServerUtil;
 import com.github.graphene.util.entity.EntityInformation;
-import com.github.graphene.wrapper.play.server.WrapperPlayServerJoinGame;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
