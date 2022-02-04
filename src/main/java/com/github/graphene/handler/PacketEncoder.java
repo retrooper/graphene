@@ -17,7 +17,7 @@ import java.util.List;
 public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
     public final Player player;
     public User user;
-    private List<Runnable> promisedTasks = new ArrayList<>();
+    private final List<Runnable> promisedTasks = new ArrayList<>();
 
     public PacketEncoder(User user, Player player) {
         this.user = user;
@@ -63,7 +63,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
-        if (!msg.isReadable())return;
+        if (msg.readableBytes() == 0)return;
         out.writeBytes(msg);
         read(ctx, out);
     }

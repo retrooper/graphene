@@ -49,7 +49,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> out) {
-        if (byteBuf.isReadable()) {
+        if (byteBuf.readableBytes() != 0) {
             read(ctx, byteBuf, out);
         }
     }

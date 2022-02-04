@@ -5,19 +5,25 @@ import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
 import com.github.graphene.handler.PacketPrepender;
 import com.github.graphene.handler.PacketSplitter;
-import com.github.graphene.packetevents.GraphenePacketEventsBuilder;
-import com.github.graphene.packetevents.listener.*;
+import com.github.graphene.injector.ChannelInjectorImpl;
+import com.github.graphene.listener.*;
 import com.github.graphene.player.Player;
 import com.github.graphene.util.ChunkUtil;
 import com.github.graphene.util.Vector2i;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.injector.ChannelInjector;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
+import io.github.retrooper.packetevents.factory.netty.BuildData;
+import io.github.retrooper.packetevents.factory.netty.NettyPacketEventsBuilder;
+import io.github.retrooper.packetevents.manager.player.PlayerManagerImpl;
+import io.github.retrooper.packetevents.manager.server.ServerManagerImpl;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -61,7 +67,30 @@ public class Main {
     //Store world blocks
     //Store last entity positions
     public static void main(String[] args) throws Exception {
-        PacketEvents.setAPI(GraphenePacketEventsBuilder.build(new GraphenePacketEventsBuilder.Plugin("graphene")));
+        BuildData data = new BuildData("graphene");
+        ChannelInjector injector = new ChannelInjectorImpl();
+
+        ServerManagerImpl serverManager = new ServerManagerImpl() {
+            @Override
+            public ServerVersion getVersion() {
+                return ServerVersion.getLatest();
+            }
+        };
+
+        PlayerManagerImpl playerManager = new PlayerManagerImpl() {
+            @Override
+            public int getPing(@NotNull Object player) {
+                return (int) ((Player) player).getLatency();
+            }
+
+            @Override
+            public ChannelAbstract getChannel(@NotNull Object player) {
+                return PacketEvents.getAPI().getNettyManager().wrapChannel(((Player) player).getChannel());
+            }
+        };
+
+        PacketEvents.setAPI(NettyPacketEventsBuilder.build(data, injector,
+                serverManager, playerManager));
         PacketEvents.getAPI().getSettings().debug(true).bStats(true);
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().getEventManager()

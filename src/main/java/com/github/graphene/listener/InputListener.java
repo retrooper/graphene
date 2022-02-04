@@ -1,4 +1,4 @@
-package com.github.graphene.packetevents.listener;
+package com.github.graphene.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.entity.ItemEntity;

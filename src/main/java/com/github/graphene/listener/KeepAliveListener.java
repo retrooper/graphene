@@ -1,4 +1,4 @@
-package com.github.graphene.packetevents.listener;
+package com.github.graphene.listener;
 
 import com.github.graphene.player.Player;
 import com.github.graphene.util.entity.UpdateType;

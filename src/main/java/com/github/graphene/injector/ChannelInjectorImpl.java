@@ -1,4 +1,4 @@
-package com.github.graphene.packetevents.injector;
+package com.github.graphene.injector;
 
 import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;

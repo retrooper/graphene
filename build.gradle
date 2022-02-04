@@ -14,12 +14,7 @@ jar {
 
 repositories {
     mavenCentral()
-    maven {
-        url = 'https://oss.sonatype.org/content/groups/public/'
-    }
-
     maven { url 'https://jitpack.io' }
-
 }
 
 shadowJar {
@@ -30,6 +25,7 @@ dependencies {
     compileOnly 'org.jetbrains:annotations:22.0.0'
     implementation 'io.netty:netty-all:4.1.72.Final'
     implementation 'com.github.retrooper.packetevents:api:2.0-SNAPSHOT'
+    implementation 'com.github.retrooper:packetevents-netty-impl:master-SNAPSHOT'
 }
 
 def targetJavaVersion = 17
