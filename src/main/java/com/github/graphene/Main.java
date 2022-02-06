@@ -56,7 +56,7 @@ public class Main {
     public static final int PORT = 25999;
     public static final Queue<Player> PLAYERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
-    public static boolean ONLINE_MODE = true;
+    public static boolean ONLINE_MODE = false;
     public static int ENTITIES = 0;
     public static final Queue<ItemEntity> ITEM_ENTITIES = new ConcurrentLinkedQueue<>();
     public static final Map<Vector2i, Column> CHUNKS = new ConcurrentHashMap<>();
