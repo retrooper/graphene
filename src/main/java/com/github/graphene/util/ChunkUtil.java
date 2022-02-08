@@ -8,6 +8,8 @@ import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
 import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
 import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
+import com.github.retrooper.packetevents.util.MathUtil;
+import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import org.jetbrains.annotations.Nullable;
@@ -48,12 +50,27 @@ public class ChunkUtil {
         return chunk.get(secX, secY, secZ);
     }
 
+    public static WrappedBlockState getBlockStateByPosition(Vector3d position) {
+        return getBlockStateByPosition(
+                new Vector3i(
+                        MathUtil.floor(position.x),
+                        MathUtil.floor(position.y),
+                        MathUtil.floor(position.z)));
+    }
+
     public static void setBlockStateByPosition(Vector3i blockPosition, WrappedBlockState blockState) {
         BaseChunk chunk = getChunkByPosition(blockPosition);
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
         chunk.set(secX, secY, secZ, blockState.getGlobalId());
+    }
+
+    public static void setBlockStateByPosition(Vector3d position, WrappedBlockState blockState) {
+        setBlockStateByPosition(new Vector3i(
+                MathUtil.floor(position.x),
+                MathUtil.floor(position.y),
+                MathUtil.floor(position.z)), blockState);
     }
 
     public static void sendChunkColumns(Player player) {
