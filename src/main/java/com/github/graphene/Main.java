@@ -59,7 +59,7 @@ public class Main {
     public static boolean ONLINE_MODE = false;
     public static int ENTITIES = 0;
     public static final Queue<ItemEntity> ITEM_ENTITIES = new ConcurrentLinkedQueue<>();
-    public static final Map<Vector2i, Column> CHUNKS = new ConcurrentHashMap<>();
+    public static final Map<Long, Column> CHUNKS = new ConcurrentHashMap<>();
 
 
     //Need to store items players have in hand;

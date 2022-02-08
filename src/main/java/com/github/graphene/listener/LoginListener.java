@@ -6,6 +6,7 @@ import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -21,6 +22,7 @@ import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServer
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 
 import javax.crypto.Cipher;
@@ -59,6 +61,11 @@ public class LoginListener implements PacketListener {
         if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
             WrapperHandshakingClientHandshake handshake = new WrapperHandshakingClientHandshake(event);
             int protocolVersion = handshake.getProtocolVersion();
+            if (handshake.getNextConnectionState() == ConnectionState.LOGIN
+                    && protocolVersion != Main.SERVER_PROTOCOL_VERSION
+            || handshake.getNextConnectionState() == ConnectionState.PLAY) {//Why connect to play? xd
+                ((Channel)user.getChannel().rawChannel()).close();
+            }
         } else if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
             //The client is attempting to log in.
             WrapperLoginClientLoginStart start = new WrapperLoginClientLoginStart(event);
