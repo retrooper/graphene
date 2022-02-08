@@ -8,8 +8,7 @@ import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.injector.ChannelInjectorImpl;
 import com.github.graphene.listener.*;
 import com.github.graphene.player.Player;
-import com.github.graphene.util.ChunkUtil;
-import com.github.graphene.util.Vector2i;
+import com.github.graphene.util.ChunkHelper;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.injector.ChannelInjector;
@@ -109,7 +108,7 @@ public class Main {
         Main.LOGGER.info("Starting Graphene Server. Version: " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
 
         Main.LOGGER.info("Preparing chunks...");
-        ChunkUtil.generateChunkColumns(1, 1, true);
+        ChunkHelper.generateChunkColumns(1, 1, true);
         Main.LOGGER.info("Binding to port... " + PORT);
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();

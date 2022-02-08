@@ -2,7 +2,7 @@ package com.github.graphene.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
-import com.github.graphene.util.ChunkUtil;
+import com.github.graphene.util.ChunkHelper;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.util.entity.UpdateType;
@@ -42,19 +42,11 @@ public class EntityHandler implements PacketListener {
                 entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());
                 WrappedBlockState cobbleStone = WrappedBlockState.getByString("minecraft:cobblestone");
                 entityInformation.setLastBlockActionData(cobbleStone);
-
-                //Update the chunk cache(set to cobble stone always for now) TODO get block in hand
-                ChunkUtil.setBlockStateByPosition(blockPlacement.getBlockPosition(),
-                        cobbleStone);
                 entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
                 if (playerDigging.getAction() == DiggingAction.FINISHED_DIGGING) {
                     entityInformation.setLastBlockActionPosition(playerDigging.getBlockPosition());
-
-                    //Update the chunk cache(set to air)
-                    ChunkUtil.setBlockStateByPosition(playerDigging.getBlockPosition(),
-                            WrappedBlockState.getByGlobalId(0));
                     entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
                 }
             } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
@@ -183,13 +175,20 @@ public class EntityHandler implements PacketListener {
                             if (entityInformation.getLastBlockActionPosition() != null) {
                                 WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(entityInformation.getLastBlockActionPosition(), 0);
                                 packetQueue.add(blockChange);
+                                //Update the chunk cache(set to air)
+                                ChunkHelper.setBlockStateAt(blockChange.getBlockPosition(),
+                                        WrappedBlockState.getByGlobalId(0));
                             }
                             break;
 
                         case BLOCK_PLACE:
-
                             if (entityInformation.getLastBlockActionPosition() != null) {
-                                WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(entityInformation.getLastBlockActionPosition(), entityInformation.getLastBlockActionData().getGlobalId());
+                                WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(
+                                        entityInformation.getLastBlockActionPosition(),
+                                        entityInformation.getLastBlockActionData().getGlobalId());
+                                //Update the chunk cache(set to cobble stone always for now) TODO get block in hand
+                                ChunkHelper.setBlockStateAt(blockChange.getBlockPosition(),
+                                        blockChange.getBlockState());
                                 packetQueue.add(blockChange);
                             }
                     }

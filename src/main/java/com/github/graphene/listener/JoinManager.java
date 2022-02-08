@@ -2,7 +2,7 @@ package com.github.graphene.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
-import com.github.graphene.util.ChunkUtil;
+import com.github.graphene.util.ChunkHelper;
 import com.github.graphene.util.ServerUtil;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -96,7 +96,7 @@ public class JoinManager {
         WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(player.getEntityId(), 28);
         player.sendPacket(entityStatus);
 
-        ChunkUtil.sendChunkColumns(player);
+        ChunkHelper.sendChunkColumns(player);
 
         //Actually spawn them into the world
         WrapperPlayServerPlayerPositionAndLook positionAndLook =

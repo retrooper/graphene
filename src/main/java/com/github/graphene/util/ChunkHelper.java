@@ -17,24 +17,23 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChunkUtil {
+public class ChunkHelper {
     private static final int MIN_HEIGHT = 0;
-    private static final int MAX_HEIGHT = 255;
 
     public static long chunkPositionToLong(int x, int z) {
         return ((x & 0xFFFFFFFFL) << 32L) | (z & 0xFFFFFFFFL);
     }
 
     @Nullable
-    public static Column getColumnByPosition(Vector3i blockPosition) {
+    public static Column getColumnAt(Vector3i blockPosition) {
         return Main.CHUNKS.get(chunkPositionToLong(blockPosition.getX() >> 4, blockPosition.getZ() >> 4));
     }
 
     @Nullable
-    public static BaseChunk getChunkByPosition(Vector3i blockPosition) {
+    public static BaseChunk getChunkAt(Vector3i blockPosition) {
         int y = blockPosition.getY();
         y -= MIN_HEIGHT;
-        Column column = getColumnByPosition(blockPosition);
+        Column column = getColumnAt(blockPosition);
         if (column != null) {
             return column.getChunks()[y >> 4];
         }
@@ -42,32 +41,32 @@ public class ChunkUtil {
     }
 
     @Nullable
-    public static WrappedBlockState getBlockStateByPosition(Vector3i blockPosition) {
-        BaseChunk chunk = getChunkByPosition(blockPosition);
+    public static WrappedBlockState getBlockStateAt(Vector3i blockPosition) {
+        BaseChunk chunk = getChunkAt(blockPosition);
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
         return chunk.get(secX, secY, secZ);
     }
 
-    public static WrappedBlockState getBlockStateByPosition(Vector3d position) {
-        return getBlockStateByPosition(
+    public static WrappedBlockState getBlockStateAt(Vector3d position) {
+        return getBlockStateAt(
                 new Vector3i(
                         MathUtil.floor(position.x),
                         MathUtil.floor(position.y),
                         MathUtil.floor(position.z)));
     }
 
-    public static void setBlockStateByPosition(Vector3i blockPosition, WrappedBlockState blockState) {
-        BaseChunk chunk = getChunkByPosition(blockPosition);
+    public static void setBlockStateAt(Vector3i blockPosition, WrappedBlockState blockState) {
+        BaseChunk chunk = getChunkAt(blockPosition);
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
         chunk.set(secX, secY, secZ, blockState.getGlobalId());
     }
 
-    public static void setBlockStateByPosition(Vector3d position, WrappedBlockState blockState) {
-        setBlockStateByPosition(new Vector3i(
+    public static void setBlockStateAt(Vector3d position, WrappedBlockState blockState) {
+        setBlockStateAt(new Vector3i(
                 MathUtil.floor(position.x),
                 MathUtil.floor(position.y),
                 MathUtil.floor(position.z)), blockState);
@@ -101,7 +100,7 @@ public class ChunkUtil {
             for (int x = 0; x < 16; x++) {
                 for (int y = 0; y < 16; y++) {
                     for (int z = 0; z < 16; z++) {
-                        //We only want blocks on the lowest chunk
+                        //We only want blocks on the lowest chunk.
                         if (y == 0 && i == 0) {
                             //chunks[i].set(x, y, z, 1);
                             chunkPalette.set(x, y, z, 1);
