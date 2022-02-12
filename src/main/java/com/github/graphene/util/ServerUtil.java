@@ -4,9 +4,6 @@ import com.github.graphene.Main;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.npc.NPC;
-import com.github.retrooper.packetevents.manager.player.PlayerManager;
-import com.github.retrooper.packetevents.netty.NettyManager;
-import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -39,8 +36,8 @@ public class ServerUtil {
         }
 
         //Name and UUID can be null
-       PacketEvents.getAPI().getPlayerManager().clearUserData(user.getChannel(),
-               user.getProfile().getName(), user.getProfile().getUUID());
+        PacketEvents.getAPI().getProtocolManager().clearUserData(user.getChannel(),
+                user.getProfile().getName());
         Main.PLAYERS.remove(player);
     }
 

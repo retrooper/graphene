@@ -11,6 +11,7 @@ import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
+import com.github.retrooper.packetevents.protocol.nbt.NBTInt;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.world.Difficulty;
 import com.github.retrooper.packetevents.protocol.world.Dimension;
@@ -18,7 +19,7 @@ import com.github.retrooper.packetevents.protocol.world.DimensionType;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
-import io.github.retrooper.packetevents.manager.netty.ByteBufUtil;
+import io.github.retrooper.packetevents.impl.manager.netty.ByteBufUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,6 +65,9 @@ public class JoinManager {
         long hashedSeed = 0L;
         //Send join game packet
         Dimension dimension = new Dimension(DimensionType.OVERWORLD, DIMENSION_NBT);
+        NBTCompound attributes = dimension.getAttributes().get();
+        attributes.setTag("min_y", new NBTInt(0));
+        attributes.setTag("height", new NBTInt(256));
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(player.getEntityId(),
                 false, player.getGameMode(), player.getPreviousGameMode(),
                 worldNames, DIMENSION_CODEC_NBT, dimension, Difficulty.NORMAL, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS,

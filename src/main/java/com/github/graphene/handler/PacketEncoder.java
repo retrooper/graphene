@@ -24,7 +24,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
         this.player = player;
     }
 
-    public void read(ChannelHandlerContext ctx, ByteBuf byteBuf) {
+    public void read(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
         int firstReaderIndex = byteBuf.readerIndex();
         PacketSendEvent packetSendEvent = EventCreationUtil.createSendEvent(ctx.channel(), user, player, byteBuf);
         int readerIndex = byteBuf.readerIndex();

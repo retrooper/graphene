@@ -12,17 +12,20 @@ import com.github.graphene.util.ChunkHelper;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.injector.ChannelInjector;
+import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
+import com.github.retrooper.packetevents.protocol.ProtocolVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.github.retrooper.packetevents.factory.netty.BuildData;
 import io.github.retrooper.packetevents.factory.netty.NettyPacketEventsBuilder;
-import io.github.retrooper.packetevents.manager.player.PlayerManagerImpl;
-import io.github.retrooper.packetevents.manager.server.ServerManagerImpl;
+import io.github.retrooper.packetevents.impl.manager.player.PlayerManagerAbstract;
+import io.github.retrooper.packetevents.impl.manager.protocol.ProtocolManagerAbstract;
+import io.github.retrooper.packetevents.impl.manager.server.ServerManagerAbstract;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -69,14 +72,14 @@ public class Main {
         BuildData data = new BuildData("graphene");
         ChannelInjector injector = new ChannelInjectorImpl();
 
-        ServerManagerImpl serverManager = new ServerManagerImpl() {
+        ServerManagerAbstract serverManager = new ServerManagerAbstract() {
             @Override
             public ServerVersion getVersion() {
                 return ServerVersion.getLatest();
             }
         };
 
-        PlayerManagerImpl playerManager = new PlayerManagerImpl() {
+        PlayerManagerAbstract playerManager = new PlayerManagerAbstract() {
             @Override
             public int getPing(@NotNull Object player) {
                 return (int) ((Player) player).getLatency();
@@ -88,7 +91,16 @@ public class Main {
             }
         };
 
+        //TODO Implement protocol manager
+        ProtocolManagerAbstract protocolManager = new ProtocolManagerAbstract() {
+            @Override
+            public ProtocolVersion getPlatformVersion() {
+                return ProtocolVersion.UNKNOWN;
+            }
+        };
+
         PacketEvents.setAPI(NettyPacketEventsBuilder.build(data, injector,
+                protocolManager,
                 serverManager, playerManager));
         PacketEvents.getAPI().getSettings().debug(true).bStats(true);
         PacketEvents.getAPI().load();
@@ -122,7 +134,7 @@ public class Main {
                         public void initChannel(@NotNull SocketChannel channel) throws Exception {
                             ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(channel);
                             User user = new User(ch, ConnectionState.HANDSHAKING, null, new UserProfile(null, null));
-                            PacketEvents.getAPI().getPlayerManager().USERS.put(ch, user);
+                            ProtocolManager.USERS.put(ch, user);
                             Player player = new Player(user);
                             PacketDecoder decoder = new PacketDecoder(user, player);
                             PacketEncoder encoder = new PacketEncoder(user, player);
