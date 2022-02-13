@@ -19,7 +19,7 @@ import com.github.retrooper.packetevents.protocol.world.DimensionType;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
-import io.github.retrooper.packetevents.impl.manager.netty.ByteBufUtil;
+import io.github.retrooper.packetevents.impl.netty.ByteBufUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
