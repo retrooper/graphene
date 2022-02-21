@@ -4,7 +4,6 @@ import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.injector.ChannelInjector;
-import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.Channel;
@@ -17,15 +16,15 @@ public class ChannelInjectorImpl implements ChannelInjector {
     }
 
     @Override
-    public @Nullable ConnectionState getConnectionState(ChannelAbstract channel) {
-        Channel ch = (Channel) channel.rawChannel();
+    public @Nullable ConnectionState getConnectionState(Object channel) {
+        Channel ch = (Channel) channel;
         PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
         return decoder.user.getConnectionState();
     }
 
     @Override
-    public void changeConnectionState(ChannelAbstract channel, @Nullable ConnectionState connectionState) {
-        Channel ch = (Channel) channel.rawChannel();
+    public void changeConnectionState(Object channel, @Nullable ConnectionState connectionState) {
+        Channel ch = (Channel) channel;
         PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
         decoder.user.setConnectionState(connectionState);
     }
@@ -41,8 +40,8 @@ public class ChannelInjectorImpl implements ChannelInjector {
     }
 
     @Override
-    public void updateUser(ChannelAbstract channel, User user) {
-        Channel ch = (Channel) channel.rawChannel();
+    public void updateUser(Object channel, User user) {
+        Channel ch = (Channel) channel;
         PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
         decoder.user = user;
         PacketEncoder encoder = (PacketEncoder) ch.pipeline().get(PacketEvents.ENCODER_NAME);

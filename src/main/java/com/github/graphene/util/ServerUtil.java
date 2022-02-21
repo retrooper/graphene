@@ -4,6 +4,7 @@ import com.github.graphene.Main;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.npc.NPC;
+import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -62,13 +63,13 @@ public class ServerUtil {
         for (Player p : Main.PLAYERS) {
             if (p.getEntityId() != player.getEntityId()) {
                 //Remove this user from everyone's tab list
-                removePlayerInfo.getBuffer().retain();
+                ByteBufHelper.retain(removePlayerInfo.getBuffer());
                 p.sendPacket(removePlayerInfo);
                 //Destroy this user's entity
-                destroyEntities.getBuffer().retain();
+                ByteBufHelper.retain(destroyEntities.getBuffer());
                 p.sendPacket(destroyEntities);
                 //Send a message to everyone that this user has left
-                leftMessage.getBuffer().retain();
+                ByteBufHelper.retain(leftMessage.getBuffer());
                 p.sendPacket(leftMessage);
             }
         }
@@ -104,7 +105,7 @@ public class ServerUtil {
 
         for (Player p : Main.PLAYERS) {
             //Send every player the login message
-            loginMessage.getBuffer().retain();
+            ByteBufHelper.retain(loginMessage.getBuffer());
             p.sendPacket(loginMessage);
 
             //Add this joining user to everyone's tab list
@@ -115,7 +116,7 @@ public class ServerUtil {
             player.sendPacket(playerInfo);
 
             //Add everyone to this user's tab list
-            nextPlayerInfo.getBuffer().retain();
+            ByteBufHelper.retain(nextPlayerInfo.getBuffer());
             p.sendPacket(nextPlayerInfo);
         }
 

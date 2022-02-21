@@ -6,6 +6,8 @@ import com.github.graphene.util.ChunkHelper;
 import com.github.graphene.util.ServerUtil;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
+import com.github.retrooper.packetevents.netty.buffer.UnpooledByteBufAllocationHelper;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
@@ -19,7 +21,6 @@ import com.github.retrooper.packetevents.protocol.world.DimensionType;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
-import io.github.retrooper.packetevents.impl.netty.ByteBufUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,8 +39,8 @@ public class JoinManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        PacketWrapper<?> dimensionBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
-        dimensionBuffer.buffer.writeBytes(dimensionBytes);
+        PacketWrapper<?> dimensionBuffer = PacketWrapper.createUniversalPacketWrapper(UnpooledByteBufAllocationHelper.buffer());
+        ByteBufHelper.writeBytes(dimensionBuffer.buffer, dimensionBytes);
         DIMENSION_NBT = dimensionBuffer.readNBT();
 
         byte[] dimensionCodecBytes = new byte[0];
@@ -50,8 +51,8 @@ public class JoinManager {
             e.printStackTrace();
         }
 
-        PacketWrapper<?> dimensionCodecBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
-        dimensionCodecBuffer.buffer.writeBytes(dimensionCodecBytes);
+        PacketWrapper<?> dimensionCodecBuffer = PacketWrapper.createUniversalPacketWrapper(UnpooledByteBufAllocationHelper.buffer());
+        ByteBufHelper.writeBytes(dimensionCodecBuffer.buffer, dimensionCodecBytes);
         DIMENSION_CODEC_NBT = dimensionCodecBuffer.readNBT();
     }
 
@@ -76,9 +77,9 @@ public class JoinManager {
 
         //Send optional plugin message packet with our server's brand
         String brandName = "Graphene";
-        PacketWrapper<?> brandNameBuffer = PacketWrapper.createUniversalPacketWrapper(ByteBufUtil.buffer());
+        PacketWrapper<?> brandNameBuffer = PacketWrapper.createUniversalPacketWrapper(UnpooledByteBufAllocationHelper.buffer());
         brandNameBuffer.writeByteArray(brandName.getBytes());
-        byte[] brandNameBytes = PacketEvents.getAPI().getNettyManager().asByteArray(brandNameBuffer.getBuffer());
+        byte[] brandNameBytes = ByteBufHelper.copyBytes(brandNameBuffer.getBuffer());
         WrapperPlayServerPluginMessage pluginMessage = new WrapperPlayServerPluginMessage("minecraft:brand", brandNameBytes);
         player.sendPacket(pluginMessage);
         //Send player abilities

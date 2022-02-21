@@ -4,12 +4,14 @@ import com.github.graphene.Main;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import com.github.retrooper.packetevents.protocol.player.*;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
+import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
@@ -49,7 +51,7 @@ public class Player {
     }
 
     public Player(User user) {
-        this((Channel) user.getChannel().rawChannel());
+        this((Channel) user.getChannel());
     }
 
     @Nullable
@@ -135,8 +137,7 @@ public class Player {
     }
 
     public void sendPacket(PacketWrapper<?> wrapper) {
-        ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(channel);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(ch, wrapper);
+        PacketEvents.getAPI().getPlayerManager().sendPacket(channel, wrapper);
     }
 
     public void sendMessage(Component component) {
@@ -145,6 +146,7 @@ public class Player {
         sendPacket(chatMessage);
     }
 
+    @Deprecated
     public void sendMessage(String message) {
         //TODO Some improvements
         sendMessage(Component.text(message).color(NamedTextColor.WHITE).asComponent());

@@ -6,6 +6,7 @@ import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
@@ -64,7 +65,7 @@ public class LoginListener implements PacketListener {
             if (handshake.getNextConnectionState() == ConnectionState.LOGIN
                     && protocolVersion != Main.SERVER_PROTOCOL_VERSION
             || handshake.getNextConnectionState() == ConnectionState.PLAY) {//Why connect to play? xd
-                ((Channel)user.getChannel().rawChannel()).close();
+                ChannelHelper.close(user.getChannel());
             }
         } else if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
             //The client is attempting to log in.

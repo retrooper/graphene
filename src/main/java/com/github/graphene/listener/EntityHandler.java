@@ -9,6 +9,7 @@ import com.github.graphene.util.entity.UpdateType;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.data.provider.PlayerDataProvider;
@@ -239,9 +240,10 @@ public class EntityHandler implements PacketListener {
                     //Inform us about our own entity metadata
                     WrapperPlayServerEntityMetadata metadata = getEntityMetadata(player.getEntityId(), player);
                     metadata.prepareForSend();
-                    metadata.getBuffer().retain();
+                    //TODO Fix this retaining stuff
+                    ByteBufHelper.retain(metadata.getBuffer());
                     player.sendPacket(metadata);
-                    metadata.getBuffer().retain();
+                    ByteBufHelper.retain(metadata.getBuffer());
                     onlinePlayer.sendPacket(metadata);
 
                     List<Equipment> equipment = new ArrayList<>();

@@ -1,5 +1,6 @@
 package com.github.graphene.handler.compression;
 
+import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -24,7 +25,7 @@ public class PacketOutCompressionHandler extends MessageToByteEncoder<ByteBuf> {
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
         msg.resetReaderIndex().resetWriterIndex();
-        int dataLength = readVarInt(msg);
+        int dataLength = ByteBufHelper.readVarInt(msg);
         ByteBuf uncompressedDataBuf = msg.readBytes(msg.readableBytes() - msg.readerIndex());
         byte[] uncompressedData = new byte[uncompressedDataBuf.readableBytes()];
         uncompressedDataBuf.readBytes(uncompressedData);
@@ -35,34 +36,11 @@ public class PacketOutCompressionHandler extends MessageToByteEncoder<ByteBuf> {
         int compressedLength = compressor.deflate(bytes);
         compressor.end();
 
-        writeVarInt(out, dataLength);
+        ByteBufHelper.writeVarInt(out, dataLength);
         int packetLength = out.readableBytes() + bytes.length;
         out.clear();
-        writeVarInt(out, packetLength);
-        writeVarInt(out, dataLength);
+        ByteBufHelper.writeVarInt(out, packetLength);
+        ByteBufHelper.writeVarInt(out, dataLength);
         out.writeBytes(bytes);
     }
-
-    private void writeVarInt(ByteBuf buffer, int value) {
-        while ((value & -128) != 0) {
-            buffer.writeByte(value & 127 | 128);
-            value >>>= 7;
-        }
-
-        buffer.writeByte(value);
-    }
-
-    private static int readVarInt(ByteBuf byteBuf) {
-        byte b0;
-        int i = 0;
-        int j = 0;
-        do {
-            b0 = byteBuf.readByte();
-            i |= (b0 & Byte.MAX_VALUE) << j++ * 7;
-            if (j > 5)
-                throw new RuntimeException("VarInt too big");
-        } while ((b0 & 128) == 128);
-        return i;
-    }
-
 }

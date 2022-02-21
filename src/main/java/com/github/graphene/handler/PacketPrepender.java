@@ -1,5 +1,6 @@
 package com.github.graphene.handler;
 
+import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -13,16 +14,6 @@ public class PacketPrepender extends MessageToByteEncoder<ByteBuf> {
         return 5;
     }
 
-    public void writeVarInt(ByteBuf buffer, int value) {
-        while ((value & -128) != 0) {
-            buffer.writeByte(value & 127 | 128);
-            value >>>= 7;
-        }
-
-        buffer.writeByte(value);
-    }
-
-    @SuppressWarnings("RedundantThrows")
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
         //Prefix the packet with its length
@@ -38,7 +29,7 @@ public class PacketPrepender extends MessageToByteEncoder<ByteBuf> {
             throw new IllegalStateException("Something went wrong in the prepender!");
         }
         out.ensureWritable(varIntSize + length);
-        writeVarInt(out, length);
+        ByteBufHelper.writeVarInt(out, length);
         out.writeBytes(msg, msg.readerIndex(), length);
     }
 }

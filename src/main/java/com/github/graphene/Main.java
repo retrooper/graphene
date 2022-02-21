@@ -14,7 +14,6 @@ import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.injector.ChannelInjector;
 import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
-import com.github.retrooper.packetevents.netty.channel.ChannelAbstract;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.ProtocolVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -86,8 +85,8 @@ public class Main {
             }
 
             @Override
-            public ChannelAbstract getChannel(@NotNull Object player) {
-                return PacketEvents.getAPI().getNettyManager().wrapChannel(((Player) player).getChannel());
+            public Object getChannel(@NotNull Object player) {
+                return ((Player) player).getChannel();
             }
         };
 
@@ -132,9 +131,8 @@ public class Main {
                         @SuppressWarnings("RedundantThrows")
                         @Override
                         public void initChannel(@NotNull SocketChannel channel) throws Exception {
-                            ChannelAbstract ch = PacketEvents.getAPI().getNettyManager().wrapChannel(channel);
-                            User user = new User(ch, ConnectionState.HANDSHAKING, null, new UserProfile(null, null));
-                            ProtocolManager.USERS.put(ch, user);
+                            User user = new User(channel, ConnectionState.HANDSHAKING, null, new UserProfile(null, null));
+                            ProtocolManager.USERS.put(channel, user);
                             Player player = new Player(user);
                             PacketDecoder decoder = new PacketDecoder(user, player);
                             PacketEncoder encoder = new PacketEncoder(user, player);

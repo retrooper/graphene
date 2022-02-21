@@ -5,6 +5,7 @@ import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.status.client.WrapperStatusClientPing;
@@ -48,7 +49,7 @@ public class ServerListPingListener implements PacketListener {
             WrapperStatusServerPong pong = new WrapperStatusServerPong(time);
             PacketEvents.getAPI().getPlayerManager().sendPacket(event.getChannel(), pong);
             //TODO forceDisconnect to User
-            ((Channel)user.getChannel().rawChannel()).close();
+            ChannelHelper.close(user.getChannel());
         }
     }
 }
