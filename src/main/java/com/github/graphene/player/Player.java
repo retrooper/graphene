@@ -137,7 +137,7 @@ public class Player {
     }
 
     public void sendPacket(PacketWrapper<?> wrapper) {
-        PacketEvents.getAPI().getPlayerManager().sendPacket(channel, wrapper);
+        PacketEvents.getAPI().getProtocolManager().sendPacket(channel, wrapper);
     }
 
     public void sendMessage(Component component) {
@@ -171,17 +171,9 @@ public class Player {
     public void kick(Component component) {
         ConnectionState state = PacketEvents.getAPI().getPlayerManager().getConnectionState(this);
         switch (state) {
-            case HANDSHAKING:
-            case STATUS:
-                forceDisconnect();
-                break;
-            case LOGIN:
-                kickLogin(component);
-                break;
-            case PLAY:
-                kickPlay(component);
-                break;
-
+            case HANDSHAKING, STATUS -> forceDisconnect();
+            case LOGIN -> kickLogin(component);
+            case PLAY -> kickPlay(component);
         }
     }
 
