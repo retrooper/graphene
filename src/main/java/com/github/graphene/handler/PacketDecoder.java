@@ -9,11 +9,11 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.util.EventCreationUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
 
-public class PacketDecoder extends ByteToMessageDecoder {
+public class PacketDecoder extends MessageToMessageDecoder<ByteBuf> {
     public User user;
     public final Player player;
 

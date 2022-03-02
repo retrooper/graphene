@@ -12,6 +12,7 @@ import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.util.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
@@ -136,6 +137,10 @@ public class Player {
         return (InetSocketAddress) channel.remoteAddress();
     }
 
+    public void writePacket(PacketWrapper<?> wrapper) {
+        PacketEvents.getAPI().getProtocolManager().writePacket(channel, wrapper);
+    }
+
     public void sendPacket(PacketWrapper<?> wrapper) {
         PacketEvents.getAPI().getProtocolManager().sendPacket(channel, wrapper);
     }
@@ -177,8 +182,8 @@ public class Player {
         }
     }
 
-    public void kick(String reason) {
-        Component component = Component.text(reason).color(NamedTextColor.DARK_RED).asComponent();
+    public void kick(String legacyReason) {
+        Component component = AdventureSerializer.asAdventure(legacyReason);
         kick(component);
     }
 

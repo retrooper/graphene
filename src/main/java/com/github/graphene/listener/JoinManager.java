@@ -6,6 +6,7 @@ import com.github.graphene.util.ChunkHelper;
 import com.github.graphene.util.ServerUtil;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.netty.buffer.UnpooledByteBufAllocationHelper;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -101,7 +102,7 @@ public class JoinManager {
         WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(player.getEntityId(), 28);
         player.sendPacket(entityStatus);
 
-        ChunkHelper.sendChunkColumns(player);
+        Main.MAIN_WORLD.createWorldForUser(player);
 
         //Actually spawn them into the world
         WrapperPlayServerPlayerPositionAndLook positionAndLook =

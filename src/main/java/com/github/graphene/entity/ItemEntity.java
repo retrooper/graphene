@@ -96,8 +96,8 @@ public class ItemEntity {
             WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId, data);
             //TODO Change holding
             WrapperPlayServerAttachEntity attachEntity = new WrapperPlayServerAttachEntity(spawner.getEntityId(), entityId, false);
-            player.sendPacket(spawnEntity);
-            player.sendPacket(metadata);
+            player.writePacket(spawnEntity);
+            player.writePacket(metadata);
             player.sendPacket(attachEntity);
         }
         Main.ITEM_ENTITIES.add(this);

@@ -48,8 +48,7 @@ public class ServerListPingListener implements PacketListener {
             long time = ping.getTime();
             WrapperStatusServerPong pong = new WrapperStatusServerPong(time);
             PacketEvents.getAPI().getProtocolManager().sendPacket(event.getChannel(), pong);
-            //TODO forceDisconnect to User
-            ChannelHelper.close(user.getChannel());
+            user.closeConnection();
         }
     }
 }

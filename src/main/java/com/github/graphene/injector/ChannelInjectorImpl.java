@@ -60,6 +60,6 @@ public class ChannelInjectorImpl implements ChannelInjector {
 
     @Override
     public boolean hasInjected(Object player) {
-        return false;
+        return true;
     }
 }

@@ -2,7 +2,6 @@ package com.github.graphene.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
-import com.github.graphene.util.ChunkHelper;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.util.entity.UpdateType;
@@ -177,7 +176,7 @@ public class EntityHandler implements PacketListener {
                                 WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(entityInformation.getLastBlockActionPosition(), 0);
                                 packetQueue.add(blockChange);
                                 //Update the chunk cache(set to air)
-                                ChunkHelper.setBlockStateAt(blockChange.getBlockPosition(),
+                                Main.MAIN_WORLD.setBlockStateAt(blockChange.getBlockPosition(),
                                         WrappedBlockState.getByGlobalId(0));
                             }
                             break;
@@ -188,7 +187,7 @@ public class EntityHandler implements PacketListener {
                                         entityInformation.getLastBlockActionPosition(),
                                         entityInformation.getLastBlockActionData().getGlobalId());
                                 //Update the chunk cache(set to cobble stone always for now) TODO get block in hand
-                                ChunkHelper.setBlockStateAt(blockChange.getBlockPosition(),
+                                Main.MAIN_WORLD.setBlockStateAt(blockChange.getBlockPosition(),
                                         blockChange.getBlockState());
                                 packetQueue.add(blockChange);
                             }
@@ -235,16 +234,16 @@ public class EntityHandler implements PacketListener {
                     Location newLocation = new Location(location.getPosition(), location.getYaw(), location.getPitch());
 
                     WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(onlinePlayer.getEntityId(), onlinePlayer.getUserProfile().getUUID(), newLocation);
-                    PacketEvents.getAPI().getPlayerManager().sendPacket(player, spawnPlayer);
+                    PacketEvents.getAPI().getPlayerManager().writePacket(player, spawnPlayer);
 
                     //Inform us about our own entity metadata
                     WrapperPlayServerEntityMetadata metadata = getEntityMetadata(player.getEntityId(), player);
                     metadata.prepareForSend();
-                    //TODO Fix this retaining stuff
+                    //TODO Is retaining necessary here
                     ByteBufHelper.retain(metadata.getBuffer());
-                    player.sendPacket(metadata);
+                    player.writePacket(metadata);
                     ByteBufHelper.retain(metadata.getBuffer());
-                    onlinePlayer.sendPacket(metadata);
+                    onlinePlayer.writePacket(metadata);
 
                     List<Equipment> equipment = new ArrayList<>();
                     ItemStack item = player.inventory[0];
@@ -255,7 +254,7 @@ public class EntityHandler implements PacketListener {
                     equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
                     //Show them what we have
                     WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(player.getEntityId(), equipment);
-                    onlinePlayer.sendPacket(equipmentPacket);
+                    onlinePlayer.writePacket(equipmentPacket);
                     //Show us what they have
                     WrapperPlayServerEntityEquipment equipmentPacket2 = new WrapperPlayServerEntityEquipment(onlinePlayer.getEntityId(), equipment);
                     player.sendPacket(equipmentPacket2);

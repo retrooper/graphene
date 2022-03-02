@@ -12,9 +12,11 @@ public class KeepAliveListener implements PacketListener {
         Player player = (Player) event.getPlayer();
         if (event.getPacketType() == PacketType.Play.Client.KEEP_ALIVE) {
             if (player.getSendKeepAliveTime() != 0L) {
-                player.setLatency(System.currentTimeMillis() - player.getSendKeepAliveTime());
+                long now = System.currentTimeMillis();
+                long ping = now - player.getSendKeepAliveTime();
+                player.setLatency(ping);
                 player.getEntityInformation().queueUpdate(UpdateType.LATENCY);
-                player.setLastKeepAliveTime(System.currentTimeMillis());
+                player.setLastKeepAliveTime(now);
             }
         }
 

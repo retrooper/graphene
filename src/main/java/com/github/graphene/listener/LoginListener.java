@@ -65,7 +65,7 @@ public class LoginListener implements PacketListener {
             if (handshake.getNextConnectionState() == ConnectionState.LOGIN
                     && protocolVersion != Main.SERVER_PROTOCOL_VERSION
             || handshake.getNextConnectionState() == ConnectionState.PLAY) {//Why connect to play? xd
-                ChannelHelper.close(user.getChannel());
+                user.closeConnection();
             }
         } else if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
             //The client is attempting to log in.
@@ -109,9 +109,12 @@ public class LoginListener implements PacketListener {
         }
         //They responded with an encryption response
         else if (event.getPacketType() == PacketType.Login.Client.ENCRYPTION_RESPONSE) {
-            WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(event);
+            //Clone the event so we can process it on another thread
+            event = event.clone();
             // Authenticate and handle player connection on our worker threads
+            final PacketReceiveEvent finalEvent = event;
             Main.WORKER_THREADS.execute(() -> {
+                WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(finalEvent);
                 //Decrypt the verify token
                 byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Main.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
                 //Private key from the server's key pair
@@ -123,7 +126,7 @@ public class LoginListener implements PacketListener {
                     digest = MessageDigest.getInstance("SHA-1");
                 } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
-                    player.forceDisconnect();
+                    user.closeConnection();
                     return; // basically asserts that digest must be not null
                 }
                 digest.update(player.getServerId().getBytes(StandardCharsets.UTF_8));
@@ -199,8 +202,9 @@ public class LoginListener implements PacketListener {
                     }
                 } else {
                     Main.LOGGER.warning("Failed to authenticate " + player.getUsername() + ", because they replied with an invalid verify token!");
-                    player.forceDisconnect();
+                    user.closeConnection();
                 }
+                finalEvent.cleanUp();
             });
         }
     }

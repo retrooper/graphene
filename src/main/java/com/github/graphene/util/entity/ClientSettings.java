@@ -7,7 +7,6 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSe
 import java.util.Set;
 
 public class ClientSettings {
-
     private String locale;
     private int viewDistance;
     private Set<SkinSection> skinSections;

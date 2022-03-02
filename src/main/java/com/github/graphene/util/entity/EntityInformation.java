@@ -22,9 +22,6 @@ public class EntityInformation {
     private float health;
     private int food;
     private float saturation;
-    private double groundX;
-    private double groundY;
-    private double groundZ;
     private boolean groundUpdate;
     private Vector3i lastBlockActionPosition;
     private WrappedBlockState lastBlockActionData;
@@ -32,10 +29,6 @@ public class EntityInformation {
     public EntityInformation(Location spawnLocation) {
         this.location = spawnLocation;
         this.tickLocation = spawnLocation;
-        groundX = location.getX();
-        groundY = location.getY();
-        groundZ = location.getZ();
-
         health = 20.0f;
         food = 20;
         saturation = 5.0f;
@@ -75,10 +68,6 @@ public class EntityInformation {
 
     public void setLastBlockActionData(WrappedBlockState lastBlockActionData) {
         this.lastBlockActionData = lastBlockActionData;
-    }
-
-    public Location getGroundLocation() {
-        return new Location(this.groundX, this.groundY, this.groundZ, location.getYaw(), location.getPitch());
     }
 
     public void setOnGround(boolean onGround) {

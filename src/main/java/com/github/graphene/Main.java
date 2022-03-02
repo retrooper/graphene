@@ -8,7 +8,7 @@ import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.injector.ChannelInjectorImpl;
 import com.github.graphene.listener.*;
 import com.github.graphene.player.Player;
-import com.github.graphene.util.ChunkHelper;
+import com.github.graphene.world.World;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.injector.ChannelInjector;
@@ -18,7 +18,6 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.ProtocolVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
-import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.github.retrooper.packetevents.impl.netty.BuildData;
 import io.github.retrooper.packetevents.impl.netty.factory.NettyPacketEventsBuilder;
@@ -27,6 +26,9 @@ import io.github.retrooper.packetevents.impl.netty.manager.protocol.ProtocolMana
 import io.github.retrooper.packetevents.impl.netty.manager.server.ServerManagerAbstract;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -35,9 +37,10 @@ import org.jetbrains.annotations.NotNull;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,14 +56,15 @@ public class Main {
     public static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
     //Generate 1024 bit RSA keypair
     public static final KeyPair KEY_PAIR = generateKeyPair();
-    public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(2);
     public static final int PORT = 25999;
     public static final Queue<Player> PLAYERS = new ConcurrentLinkedQueue<>();
     public static long totalTicks = 0L;
     public static boolean ONLINE_MODE = false;
     public static int ENTITIES = 0;
     public static final Queue<ItemEntity> ITEM_ENTITIES = new ConcurrentLinkedQueue<>();
-    public static final Map<Long, Column> CHUNKS = new ConcurrentHashMap<>();
+    public static final World MAIN_WORLD = new World();
+    public static final Set<Channel> SERVER_CHANNELS = new HashSet<>();
 
 
     //Need to store items players have in hand;
@@ -74,7 +78,7 @@ public class Main {
         ServerManagerAbstract serverManager = new ServerManagerAbstract() {
             @Override
             public ServerVersion getVersion() {
-                return ServerVersion.getLatest();
+                return ServerVersion.V_1_18_1;
             }
         };
 
@@ -104,29 +108,38 @@ public class Main {
         PacketEvents.getAPI().getSettings().debug(true).bStats(true);
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true);
+                .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST, true);
+                .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true);
+                .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false);
+                .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false, false);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new InputListener(), PacketListenerPriority.LOWEST, true);
+                .registerListener(new InputListener(), PacketListenerPriority.LOWEST, true, false);
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
         Main.LOGGER.info("Starting Graphene Server. Version: " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
 
         Main.LOGGER.info("Preparing chunks...");
-        ChunkHelper.generateChunkColumns(1, 1, true);
+        MAIN_WORLD.generateChunkRectangle(1, 1);
         Main.LOGGER.info("Binding to port... " + PORT);
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup;
+        EventLoopGroup workerGroup;
+        int workerThreads = Runtime.getRuntime().availableProcessors();
+        if (Epoll.isAvailable()) {
+            bossGroup = new EpollEventLoopGroup(1);
+            workerGroup = new EpollEventLoopGroup(workerThreads);
+        } else {
+            bossGroup = new NioEventLoopGroup(1);
+            workerGroup = new NioEventLoopGroup(workerThreads);
+        }
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
+                    .channel(Epoll.isAvailable()
+                            ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @SuppressWarnings("RedundantThrows")
                         @Override
@@ -153,15 +166,11 @@ public class Main {
             WORKER_THREADS.execute(Main::runKeepAliveLoop);
 
             // Bind and start to accept incoming connections.
-            ChannelFuture f = b.bind(PORT).sync();
+            ChannelFutureListener listener = future -> SERVER_CHANNELS.add(future.channel());
+            ChannelFuture f = b.bind(PORT).addListener(listener);
             Main.LOGGER.info("(" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
 
             Main.runTickLoop();
-
-            // Wait until the server socket is closed.
-            // In this example, this does not happen, but you can do that to gracefully
-            // shut down your server.
-            f.channel().closeFuture().sync();
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
@@ -169,8 +178,28 @@ public class Main {
         PacketEvents.getAPI().terminate();
     }
 
+    public static void closeServer() {
+        for (Channel serverChannel : SERVER_CHANNELS) {
+            try {
+                serverChannel.closeFuture().sync();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static void processInput(String input) {
+        if (input.equalsIgnoreCase("close")) {
+            closeServer();
+        }
+        System.out.println("Got input: " + input);
+    }
+
     public static void runTickLoop() {
         //1000ms / 50ms = 20 ticks per second
+        Scanner scanner = new Scanner(System.in);
+        String input = scanner.nextLine();
+        processInput(input);
         while (shouldTick) {
             totalTicks += 1;
             try {
