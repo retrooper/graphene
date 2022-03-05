@@ -78,7 +78,7 @@ public class Main {
         ServerManagerAbstract serverManager = new ServerManagerAbstract() {
             @Override
             public ServerVersion getVersion() {
-                return ServerVersion.V_1_18_1;
+                return ServerVersion.getLatest();
             }
         };
 
