@@ -11,15 +11,15 @@ import org.jetbrains.annotations.Nullable;
 
 public class ChannelInjectorImpl implements ChannelInjector {
     @Override
-    public boolean isBound() {
+    public boolean isServerBound() {
         return true;
     }
 
     @Override
-    public @Nullable ConnectionState getConnectionState(Object channel) {
+    public User getUser(Object channel) {
         Channel ch = (Channel) channel;
         PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
-        return decoder.user.getConnectionState();
+        return decoder.user;
     }
 
     @Override
@@ -35,7 +35,7 @@ public class ChannelInjectorImpl implements ChannelInjector {
     }
 
     @Override
-    public void eject() {
+    public void uninject() {
 
     }
 
@@ -49,17 +49,12 @@ public class ChannelInjectorImpl implements ChannelInjector {
     }
 
     @Override
-    public void injectPlayer(Object player, @Nullable ConnectionState connectionState) {
+    public void setPlayer(Object o, Object o1) {
 
     }
 
     @Override
-    public void ejectPlayer(Object player) {
-
-    }
-
-    @Override
-    public boolean hasInjected(Object player) {
-        return true;
+    public boolean hasPlayer(Object o) {
+        return false;
     }
 }

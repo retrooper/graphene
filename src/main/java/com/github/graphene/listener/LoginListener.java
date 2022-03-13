@@ -156,7 +156,7 @@ public class LoginListener implements PacketListener {
                         }
                         in.close();
                         //Parse the json response we got from the web request.
-                        JsonObject jsonObject = AdventureSerializer.GSON.serializer().fromJson(sb.toString(), JsonObject.class);
+                        JsonObject jsonObject = AdventureSerializer.getGsonSerializer().serializer().fromJson(sb.toString(), JsonObject.class);
 
                         String username = jsonObject.get("name").getAsString();
                         String rawUUID = jsonObject.get("id").getAsString();

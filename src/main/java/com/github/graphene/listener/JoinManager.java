@@ -109,7 +109,6 @@ public class JoinManager {
                 new WrapperPlayServerPlayerPositionAndLook(spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(), spawnLocation.getYaw(), spawnLocation.getPitch(), (byte) 0, 0, true);
         player.sendPacket(positionAndLook);
 
-
         EntityHandler.onLogin(player);
     }
 

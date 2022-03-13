@@ -3,10 +3,11 @@ package com.github.graphene.util;
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.npc.NPC;
+import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
+import com.github.retrooper.packetevents.protocol.npc.NPC;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.MojangAPIUtil;
@@ -35,10 +36,7 @@ public class ServerUtil {
         if (user.getConnectionState() == ConnectionState.PLAY) {
             ServerUtil.handlePlayerLeave(player);
         }
-
-        //Name and UUID can be null
-        PacketEvents.getAPI().getProtocolManager().clearUserData(user.getChannel(),
-                user.getProfile().getName());
+        ProtocolManager.USERS.remove(user.getChannel());
         Main.PLAYERS.remove(player);
     }
 
@@ -74,6 +72,7 @@ public class ServerUtil {
             }
         }
         Main.LOGGER.info(player.getUsername() + " left the server.");
+        ProtocolManager.CHANNELS.remove(player.getUsername());
     }
 
     public static void handlePlayerJoin(User user, Player player) {
@@ -130,7 +129,7 @@ public class ServerUtil {
                     NamedTextColor.BLACK, Component.text("Owner: ").color(NamedTextColor.RED),
                     null);
             npc.setLocation(player.getEntityInformation().getLocation());
-            PacketEvents.getAPI().getNPCManager().spawn(user.getChannel(), npc);
+            npc.spawn(user.getChannel());
         });
     }
 
