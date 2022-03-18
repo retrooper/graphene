@@ -35,6 +35,6 @@ public class PacketSplitter extends ByteToMessageDecoder {
                 }
             }
         }
-        throw new CorruptedFrameException("length wider than 21-bit");
+        throw new CorruptedFrameException("Something went wrong in the packet splitter!");
     }
 }

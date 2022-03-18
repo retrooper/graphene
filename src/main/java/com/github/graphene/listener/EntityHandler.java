@@ -19,6 +19,8 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.*;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
+import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
@@ -40,8 +42,7 @@ public class EntityHandler implements PacketListener {
             if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
                 WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
                 entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());
-                WrappedBlockState cobbleStone = WrappedBlockState.getByString("minecraft:cobblestone");
-                entityInformation.setLastBlockActionData(cobbleStone);
+                entityInformation.setLastBlockActionData(StateTypes.COBBLESTONE.createBlockState());
                 entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
@@ -89,6 +90,8 @@ public class EntityHandler implements PacketListener {
                 for (Player lPlayer : Main.PLAYERS) {
                     if (lPlayer.getEntityId() != player.getEntityId()) {
                         lPlayer.sendPacket(entityAnimationWrapper);
+                        ByteBufHelper.retain(entityAnimationWrapper.getBuffer());
+                        //TODO See if this is valid
                     }
                 }
             }

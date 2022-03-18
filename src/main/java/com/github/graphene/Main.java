@@ -3,7 +3,7 @@ package com.github.graphene;
 import com.github.graphene.entity.ItemEntity;
 import com.github.graphene.handler.PacketDecoder;
 import com.github.graphene.handler.PacketEncoder;
-import com.github.graphene.handler.PacketPrepender;
+import com.github.graphene.handler.PacketFormatter;
 import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.injector.ChannelInjectorImpl;
 import com.github.graphene.listener.*;
@@ -105,18 +105,18 @@ public class Main {
         PacketEvents.setAPI(NettyPacketEventsBuilder.build(data, injector,
                 protocolManager,
                 serverManager, playerManager));
-        PacketEvents.getAPI().getSettings().debug(true).bStats(true);
+        PacketEvents.getAPI().getSettings().debug(true).bStats(true).readOnlyListeners(true);
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST, true, false);
+                .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST, true, false);
+                .registerListener(new LoginListener(ONLINE_MODE), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST, true, false);
+                .registerListener(new KeepAliveListener(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST, false, false);
+                .registerListener(new EntityHandler(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new InputListener(), PacketListenerPriority.LOWEST, true, false);
+                .registerListener(new InputListener(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().init();
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
@@ -156,7 +156,7 @@ public class Main {
                                     .addLast(PacketEvents.DECODER_NAME, decoder)
                                     .addLast("encryption_handler", new ChannelHandlerAdapter() {
                                     })
-                                    .addLast("packet_prepender", new PacketPrepender())
+                                    .addLast("packet_formatter", new PacketFormatter())
                                     .addLast(PacketEvents.ENCODER_NAME, encoder);
                         }
                     })
