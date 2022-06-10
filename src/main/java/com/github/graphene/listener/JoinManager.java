@@ -2,16 +2,11 @@ package com.github.graphene.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
-import com.github.graphene.util.ChunkHelper;
 import com.github.graphene.util.ServerUtil;
 import com.github.graphene.util.entity.EntityInformation;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.netty.buffer.UnpooledByteBufAllocationHelper;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
-import com.github.retrooper.packetevents.protocol.item.enchantment.Enchantment;
-import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.nbt.NBTInt;
@@ -92,7 +87,7 @@ public class JoinManager {
         //Send held item change
         player.setHotbarIndex(0, ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(1).build());
         player.setHotbarIndex(1, ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1)
-                .addEnchantment(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(3).build())
+                /*.addEnchantment(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(3).build())*/
                 .build());
         player.setHotbarIndex(2, ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build());
         player.updateHotbar();

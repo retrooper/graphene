@@ -86,7 +86,7 @@ public class ItemEntity {
                     Optional.of(UUID.randomUUID()),
                     EntityTypes.ITEM,
                     pos,
-                    0, 0,
+                    0, 0, 0,
                     1,
                     Optional.of(new Vector3d(0, -4, 0)));
             List<EntityData> data = EntityDataProvider.builderEntity()

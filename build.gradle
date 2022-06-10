@@ -27,17 +27,24 @@ shadowJar {
 
 dependencies {
     compileOnly 'org.jetbrains:annotations:23.0.0'
-    implementation 'io.netty:netty-all:4.1.74.Final'
+    implementation 'io.netty:netty-all:4.1.77.Final'
     implementation 'com.github.retrooper.packetevents:netty-common:2.0-SNAPSHOT'
     implementation(adventureDependencies)
 }
 
-def targetJavaVersion = 17
+/*def targetJavaVersion = JavaVersion.VERSION_17
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion
+}*/
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
+
 
 processResources {
     def props = [version: version]

@@ -19,7 +19,6 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.*;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
-import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -42,7 +41,7 @@ public class EntityHandler implements PacketListener {
             if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
                 WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
                 entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());
-                entityInformation.setLastBlockActionData(StateTypes.COBBLESTONE.createBlockState());
+                entityInformation.setLastBlockActionData(StateTypes.COBBLESTONE.createBlockState(Main.CLIENT_VERSION));
                 entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
@@ -180,7 +179,7 @@ public class EntityHandler implements PacketListener {
                                 packetQueue.add(blockChange);
                                 //Update the chunk cache(set to air)
                                 Main.MAIN_WORLD.setBlockStateAt(blockChange.getBlockPosition(),
-                                        WrappedBlockState.getByGlobalId(0));
+                                        WrappedBlockState.getByGlobalId(Main.CLIENT_VERSION, 0));
                             }
                             break;
 

@@ -1,18 +1,15 @@
 package com.github.graphene.listener;
 
 import com.github.graphene.Main;
-import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.status.client.WrapperStatusClientPing;
 import com.github.retrooper.packetevents.wrapper.status.server.WrapperStatusServerPong;
 import com.github.retrooper.packetevents.wrapper.status.server.WrapperStatusServerResponse;
 import com.google.gson.JsonObject;
-import io.netty.channel.Channel;
 
 public class ServerListPingListener implements PacketListener {
     @Override
@@ -38,6 +35,7 @@ public class ServerListPingListener implements PacketListener {
             descriptionComponent.addProperty("text", Main.SERVER_DESCRIPTION);
             //Add sub component
             responseComponent.add("description", descriptionComponent);
+            System.out.println(responseComponent);
             //We respond by sending them information about the server.
             WrapperStatusServerResponse response = new WrapperStatusServerResponse(responseComponent);
             user.sendPacket(response);

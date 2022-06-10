@@ -1,5 +1,6 @@
 package com.github.graphene.world;
 
+import com.github.graphene.Main;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
@@ -13,6 +14,7 @@ import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -52,7 +54,7 @@ public class World {
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
-        return chunk.get(secX, secY, secZ);
+        return chunk.get(Main.CLIENT_VERSION, secX, secY, secZ);
     }
 
     public WrappedBlockState getBlockStateAt(Vector3d position) {
@@ -68,7 +70,7 @@ public class World {
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
-        chunk.set(secX, secY, secZ, blockState.getGlobalId());
+        chunk.set(Main.CLIENT_VERSION, secX, secY, secZ, blockState.getGlobalId());
     }
 
     public void setBlockStateAt(Vector3d position, WrappedBlockState blockState) {
@@ -81,6 +83,9 @@ public class World {
     public void createWorldForUser(Player player) {
         for (Column column : chunkMap.values()) {
             WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column);
+            Arrays.stream(chunkData.getColumn().getChunks()).forEach(baseChunk -> {
+                System.out.println(" -> " + baseChunk);
+            });
             player.sendPacket(chunkData);
         }
     }
