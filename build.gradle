@@ -32,13 +32,6 @@ dependencies {
     implementation(adventureDependencies)
 }
 
-/*def targetJavaVersion = JavaVersion.VERSION_17
-java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
-}*/
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)

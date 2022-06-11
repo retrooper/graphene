@@ -14,7 +14,6 @@ import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -83,9 +82,6 @@ public class World {
     public void createWorldForUser(Player player) {
         for (Column column : chunkMap.values()) {
             WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column);
-            Arrays.stream(chunkData.getColumn().getChunks()).forEach(baseChunk -> {
-                System.out.println(" -> " + baseChunk);
-            });
             player.sendPacket(chunkData);
         }
     }

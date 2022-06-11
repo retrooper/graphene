@@ -19,7 +19,7 @@ public class PacketEncoder extends MessageToByteEncoder<ByteBuf> {
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
         if (msg.isReadable()) {
             out.writeBytes(msg);
-            PacketEventsImplHelper.handleClientBoundPacket(ctx.channel(), user, player, out, true, true);
+            PacketEventsImplHelper.handleClientBoundPacket(ctx.channel(), user, player, out, true, false);
         }
     }
 }
