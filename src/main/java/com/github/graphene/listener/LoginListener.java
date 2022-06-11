@@ -6,15 +6,14 @@ import com.github.graphene.handler.encryption.PacketEncryptionHandler;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.netty.channel.ChannelHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.util.AdventureSerializer;
-import com.github.retrooper.packetevents.util.MinecraftEncryptionUtil;
 import com.github.retrooper.packetevents.util.UUIDUtil;
+import com.github.retrooper.packetevents.util.crypto.MinecraftEncryptionUtil;
 import com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
@@ -23,7 +22,6 @@ import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServer
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 
 import javax.crypto.Cipher;
@@ -116,7 +114,7 @@ public class LoginListener implements PacketListener {
             Main.WORKER_THREADS.execute(() -> {
                 WrapperLoginClientEncryptionResponse encryptionResponse = new WrapperLoginClientEncryptionResponse(finalEvent);
                 //Decrypt the verify token
-                byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Main.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken());
+                byte[] verifyToken = MinecraftEncryptionUtil.decryptRSA(Main.KEY_PAIR.getPrivate(), encryptionResponse.getEncryptedVerifyToken().orElseThrow());
                 //Private key from the server's key pair
                 PrivateKey privateKey = Main.KEY_PAIR.getPrivate();
                 //Decrypt the shared secret

@@ -5,13 +5,10 @@ import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
+import com.github.retrooper.packetevents.protocol.chat.ChatType;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import com.github.retrooper.packetevents.protocol.player.GameMode;
-import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
-import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.protocol.player.*;
 import com.github.retrooper.packetevents.util.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
@@ -25,8 +22,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.UUID;
 
 public class Player {
     private final Channel channel;
@@ -48,7 +43,7 @@ public class Player {
 
     public Player(Channel channel) {
         this.channel = channel;
-        this.clientSettings = new ClientSettings("", 0, new HashSet<>(), WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
+        this.clientSettings = new ClientSettings("", 0, SkinSection.ALL, WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
     }
 
     public Player(User user) {
@@ -146,8 +141,7 @@ public class Player {
     }
 
     public void sendMessage(Component component) {
-        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(component, ChatPosition.CHAT,
-                new UUID(0L, 0L));
+        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(ChatType.CHAT, component);
         sendPacket(chatMessage);
     }
 
@@ -183,7 +177,7 @@ public class Player {
     }
 
     public void kick(String legacyReason) {
-        Component component = AdventureSerializer.asAdventure(legacyReason);
+        Component component = AdventureSerializer.parseComponent(legacyReason);
         kick(component);
     }
 

@@ -16,6 +16,7 @@ import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.ProtocolVersion;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
@@ -51,6 +52,7 @@ public class Main {
     public static volatile boolean shouldRunKeepAliveLoop = true;
     public static String SERVER_VERSION_NAME;
     public static int SERVER_PROTOCOL_VERSION;
+    public static ClientVersion CLIENT_VERSION;
     public static final int MAX_PLAYERS = 1000;
     public static final String SERVER_DESCRIPTION = "Graphene Server";
     public static final Logger LOGGER = Logger.getLogger(Main.class.getSimpleName());
@@ -78,7 +80,7 @@ public class Main {
         ServerManagerAbstract serverManager = new ServerManagerAbstract() {
             @Override
             public ServerVersion getVersion() {
-                return ServerVersion.getLatest();
+                return ServerVersion.V_1_18_1;
             }
         };
 
@@ -118,8 +120,9 @@ public class Main {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new InputListener(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().init();
-        SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
-        SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
+        SERVER_VERSION_NAME = ServerVersion.V_1_18_1.getReleaseName();
+        SERVER_PROTOCOL_VERSION = ServerVersion.V_1_18_1.getProtocolVersion();
+        CLIENT_VERSION = ServerVersion.V_1_18_1.toClientVersion();
         Main.LOGGER.info("Starting Graphene Server. Version: " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
 
         Main.LOGGER.info("Preparing chunks...");

@@ -2,11 +2,10 @@ package com.github.graphene.util;
 
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
+import com.github.retrooper.packetevents.protocol.chat.ChatType;
 import com.github.retrooper.packetevents.protocol.npc.NPC;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
@@ -25,8 +24,7 @@ import java.util.UUID;
 public class ServerUtil {
     public static void broadcastMessage(Component component) {
         for (Player player : Main.PLAYERS) {
-            WrapperPlayServerChatMessage outChatMessage = new WrapperPlayServerChatMessage(component,
-                    ChatPosition.CHAT, new UUID(0L, 0L));
+            WrapperPlayServerChatMessage outChatMessage = new WrapperPlayServerChatMessage(ChatType.CHAT, component);
             outChatMessage.prepareForSend();
             player.sendPacket(outChatMessage);
         }
@@ -54,9 +52,7 @@ public class ServerUtil {
         WrapperPlayServerDestroyEntities destroyEntities = new WrapperPlayServerDestroyEntities(player.getEntityId());
         destroyEntities.prepareForSend();
 
-        WrapperPlayServerChatMessage leftMessage =
-                new WrapperPlayServerChatMessage(translatableComponent,
-                        ChatPosition.CHAT, new UUID(0L, 0L));
+        WrapperPlayServerChatMessage leftMessage = new WrapperPlayServerChatMessage(ChatType.CHAT, translatableComponent);
         leftMessage.prepareForSend();
         for (Player p : Main.PLAYERS) {
             if (p.getEntityId() != player.getEntityId()) {
@@ -91,8 +87,7 @@ public class ServerUtil {
                 .asComponent();
 
 
-        WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(translatableComponent,
-                ChatPosition.CHAT, new UUID(0L, 0L));
+        WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(ChatType.CHAT, translatableComponent);
         loginMessage.prepareForSend();
 
         Component otherDisplayName = Component.text(player.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
