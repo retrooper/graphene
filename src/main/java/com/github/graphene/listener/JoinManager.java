@@ -16,10 +16,9 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.NBTCompound;
 import com.github.retrooper.packetevents.protocol.nbt.NBTInt;
 import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.protocol.world.Difficulty;
-import com.github.retrooper.packetevents.protocol.world.Dimension;
-import com.github.retrooper.packetevents.protocol.world.DimensionType;
-import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.protocol.world.*;
+import com.github.retrooper.packetevents.resources.ResourceLocation;
+import com.github.retrooper.packetevents.util.MathUtil;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 
@@ -66,16 +65,20 @@ public class JoinManager {
         worldNames.add("minecraft:the_end");
         long hashedSeed = 0L;
         //Send join game packet
-        Dimension dimension = new Dimension(DimensionType.OVERWORLD, DIMENSION_NBT);
-        NBTCompound attributes = dimension.getAttributes().get();
+        Dimension dimension = new Dimension(DIMENSION_NBT);
+        dimension.setType(DimensionType.OVERWORLD);
+        NBTCompound attributes = dimension.getAttributes();
         attributes.setTag("min_y", new NBTInt(0));
         attributes.setTag("height", new NBTInt(256));
+        WorldBlockPosition lastDeathLocation = new WorldBlockPosition(new ResourceLocation(worldNames.get(0)),
+                MathUtil.floor(spawnLocation.getX()),
+                MathUtil.floor(spawnLocation.getY()),
+                MathUtil.floor(spawnLocation.getZ()));
         WrapperPlayServerJoinGame joinGame = new WrapperPlayServerJoinGame(player.getEntityId(),
                 false, player.getGameMode(), player.getPreviousGameMode(),
                 worldNames, DIMENSION_CODEC_NBT, dimension, Difficulty.NORMAL, worldNames.get(0), hashedSeed, Main.MAX_PLAYERS,
-                20, 20, false, true, false, true);
-        user.sendPacket(joinGame);
-
+                20, 20, false, true, false, true, lastDeathLocation, 0);
+        player.sendPacket(joinGame);
         //Send optional plugin message packet with our server's brand
         String brandName = "Graphene";
         PacketWrapper<?> brandNameBuffer = PacketWrapper.createUniversalPacketWrapper(UnpooledByteBufAllocationHelper.buffer());
@@ -91,9 +94,11 @@ public class JoinManager {
 
         //Send held item change
         player.setHotbarIndex(0, ItemStack.builder().type(ItemTypes.DIAMOND_SWORD).amount(1).build());
-        player.setHotbarIndex(1, ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1)
-                .addEnchantment(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(3).build())
-                .build());
+        ItemStack pickaxe = ItemStack.builder().type(ItemTypes.DIAMOND_PICKAXE).amount(1).build();
+        List<Enchantment> enchantments = new ArrayList<>();
+        enchantments.add(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(1).build());
+        pickaxe.setEnchantments(enchantments, user.getClientVersion());
+        player.setHotbarIndex(1, pickaxe);
         player.setHotbarIndex(2, ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build());
         player.updateHotbar();
         WrapperPlayServerHeldItemChange heldItemChange = new WrapperPlayServerHeldItemChange(0);

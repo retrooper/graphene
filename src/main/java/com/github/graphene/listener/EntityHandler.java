@@ -5,13 +5,12 @@ import com.github.graphene.player.Player;
 import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.graphene.util.entity.UpdateType;
+import com.github.graphene.world.block.Block;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
-import com.github.retrooper.packetevents.protocol.entity.data.provider.PlayerDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.pose.EntityPose;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -19,7 +18,6 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.*;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
-import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -40,9 +38,11 @@ public class EntityHandler implements PacketListener {
         EntityInformation entityInformation = player.getEntityInformation();
         if (user.getConnectionState() == ConnectionState.PLAY) {
             if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
+                System.out.println("Detected!");
                 WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
                 entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());
-                entityInformation.setLastBlockActionData(StateTypes.COBBLESTONE.createBlockState());
+                entityInformation.setLastBlockActionData(StateTypes.GOLD_BLOCK.createBlockState(PacketEvents.getAPI()
+                        .getServerManager().getVersion().toClientVersion()));
                 entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
@@ -83,15 +83,12 @@ public class EntityHandler implements PacketListener {
                     entityInformation.queueUpdate(UpdateType.METADATA);
                 }
             } else if (event.getPacketType() == PacketType.Play.Client.ANIMATION) {
-                WrapperPlayClientAnimation animationWrapper = new WrapperPlayClientAnimation(event);
-                WrapperPlayServerEntityAnimation.EntityAnimationType animation = animationWrapper.getHand() == InteractionHand.MAIN_HAND ? WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM : WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_OFFHAND;
-                WrapperPlayServerEntityAnimation entityAnimationWrapper = new WrapperPlayServerEntityAnimation(player.getEntityId(), animation);
-
                 for (Player lPlayer : Main.PLAYERS) {
                     if (lPlayer.getEntityId() != player.getEntityId()) {
+                        WrapperPlayClientAnimation animationWrapper = new WrapperPlayClientAnimation(event);
+                        WrapperPlayServerEntityAnimation.EntityAnimationType animation = animationWrapper.getHand() == InteractionHand.MAIN_HAND ? WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM : WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_OFF_HAND;
+                        WrapperPlayServerEntityAnimation entityAnimationWrapper = new WrapperPlayServerEntityAnimation(player.getEntityId(), animation);
                         lPlayer.sendPacket(entityAnimationWrapper);
-                        ByteBufHelper.retain(entityAnimationWrapper.getBuffer());
-                        //TODO See if this is valid
                     }
                 }
             }
@@ -101,8 +98,8 @@ public class EntityHandler implements PacketListener {
     public static void onTick() {
         for (Player player : Main.PLAYERS) {
             EntityInformation entityInformation = player.getEntityInformation();
-            if (!entityInformation.getQueuedUpdates().isEmpty()) {
-                Queue<UpdateType> queuedUpdates = entityInformation.getQueuedUpdates();
+            Queue<UpdateType> queuedUpdates = entityInformation.getQueuedUpdates();
+            if (!queuedUpdates.isEmpty()) {
                 List<PacketWrapper<?>> packetQueue = new ArrayList<>();
                 Location currentLocation = entityInformation.getLocation();
                 for (UpdateType updateType : queuedUpdates) {
@@ -180,7 +177,8 @@ public class EntityHandler implements PacketListener {
                                 packetQueue.add(blockChange);
                                 //Update the chunk cache(set to air)
                                 Main.MAIN_WORLD.setBlockStateAt(blockChange.getBlockPosition(),
-                                        WrappedBlockState.getByGlobalId(0));
+                                        WrappedBlockState.getByGlobalId(PacketEvents.getAPI().getServerManager()
+                                                .getVersion().toClientVersion(), 0));
                             }
                             break;
 
@@ -189,9 +187,12 @@ public class EntityHandler implements PacketListener {
                                 WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(
                                         entityInformation.getLastBlockActionPosition(),
                                         entityInformation.getLastBlockActionData().getGlobalId());
+
                                 //Update the chunk cache(set to cobble stone always for now) TODO get block in hand
                                 Main.MAIN_WORLD.setBlockStateAt(blockChange.getBlockPosition(),
                                         blockChange.getBlockState());
+                                System.out.println("Block: " + Main.MAIN_WORLD.getBlockStateAt(blockChange.getBlockPosition()) + ", above: " + Main.MAIN_WORLD.getBlockStateAt(blockChange.getBlockPosition().add(0, 1, 0)));
+
                                 packetQueue.add(blockChange);
                             }
                     }
@@ -237,15 +238,12 @@ public class EntityHandler implements PacketListener {
                     Location newLocation = new Location(location.getPosition(), location.getYaw(), location.getPitch());
 
                     WrapperPlayServerSpawnPlayer spawnPlayer = new WrapperPlayServerSpawnPlayer(onlinePlayer.getEntityId(), onlinePlayer.getUserProfile().getUUID(), newLocation);
-                    PacketEvents.getAPI().getPlayerManager().writePacket(player, spawnPlayer);
+                    player.writePacket(spawnPlayer);
 
                     //Inform us about our own entity metadata
                     WrapperPlayServerEntityMetadata metadata = getEntityMetadata(player.getEntityId(), player);
-                    metadata.prepareForSend();
                     //TODO Is retaining necessary here
-                    ByteBufHelper.retain(metadata.getBuffer());
                     player.writePacket(metadata);
-                    ByteBufHelper.retain(metadata.getBuffer());
                     onlinePlayer.writePacket(metadata);
 
                     List<Equipment> equipment = new ArrayList<>();
@@ -254,7 +252,7 @@ public class EntityHandler implements PacketListener {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(1).build();
                     }
                     //Allow single item constructor
-                    equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
+                    equipment.add(new Equipment(EquipmentSlot.MAIN_HAND, item));
                     //Show them what we have
                     WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(player.getEntityId(), equipment);
                     onlinePlayer.writePacket(equipmentPacket);
@@ -297,7 +295,7 @@ public class EntityHandler implements PacketListener {
 
         EntityPose entityPose = entityInformation.isSneaking() ? EntityPose.CROUCHING : EntityPose.STANDING;
 
-        EntityDataProvider playerDataProvider =
+        /*EntityDataProvider playerDataProvider =
                 PlayerDataProvider.builderPlayer()
                         .mainArm(HumanoidArm.RIGHT)
                         .skinParts(clientSettings.getVisibleSkinSections())
@@ -309,7 +307,9 @@ public class EntityHandler implements PacketListener {
                         .hasGravity(true)
                         .invisible(entityInformation.isInvisible())
                         .pose(entityPose).build();
-        return new WrapperPlayServerEntityMetadata(targetEntityId, playerDataProvider.encode());
+        return new WrapperPlayServerEntityMetadata(targetEntityId, playerDataProvider.encode());*/
+        //TODO Handle entity metadata
+        return new WrapperPlayServerEntityMetadata(targetEntityId, new ArrayList<>());
     }
 
 }

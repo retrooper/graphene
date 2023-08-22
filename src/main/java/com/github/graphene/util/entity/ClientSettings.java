@@ -9,14 +9,14 @@ import java.util.Set;
 public class ClientSettings {
     private String locale;
     private int viewDistance;
-    private Set<SkinSection> skinSections;
+    private SkinSection skinSection;
     private WrapperPlayClientSettings.ChatVisibility chatMode;
     private HumanoidArm mainHand;
 
-    public ClientSettings(String locale, int viewDistance, Set<SkinSection> skinSections, WrapperPlayClientSettings.ChatVisibility chatMode, HumanoidArm mainHand) {
+    public ClientSettings(String locale, int viewDistance, SkinSection skinSection, WrapperPlayClientSettings.ChatVisibility chatMode, HumanoidArm mainHand) {
         this.locale = locale;
         this.viewDistance = viewDistance;
-        this.skinSections = skinSections;
+        this.skinSection = skinSection;
         this.chatMode = chatMode;
         this.mainHand = mainHand;
     }
@@ -24,7 +24,7 @@ public class ClientSettings {
     public ClientSettings(WrapperPlayClientSettings eventWrapper) {
         this.locale = eventWrapper.getLocale();
         this.viewDistance = eventWrapper.getViewDistance();
-        this.skinSections = eventWrapper.getVisibleSkinSections();
+        this.skinSection = eventWrapper.getVisibleSkinSection();
         this.chatMode = eventWrapper.getVisibility();
         this.mainHand = eventWrapper.getMainHand();
     }
@@ -45,12 +45,12 @@ public class ClientSettings {
         this.viewDistance = viewDistance;
     }
 
-    public Set<SkinSection> getVisibleSkinSections() {
-        return skinSections;
+    public SkinSection getVisibleSkinSection() {
+        return skinSection;
     }
 
-    public void setVisibleSkinSections(Set<SkinSection> skinSections) {
-        this.skinSections = skinSections;
+    public void setVisibleSkinSection(SkinSection skinSection) {
+        this.skinSection = skinSection;
     }
 
     public WrapperPlayClientSettings.ChatVisibility getChatVisibility() {

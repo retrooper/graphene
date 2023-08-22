@@ -16,20 +16,6 @@ public class ChannelInjectorImpl implements ChannelInjector {
     }
 
     @Override
-    public User getUser(Object channel) {
-        Channel ch = (Channel) channel;
-        PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
-        return decoder.user;
-    }
-
-    @Override
-    public void changeConnectionState(Object channel, @Nullable ConnectionState connectionState) {
-        Channel ch = (Channel) channel;
-        PacketDecoder decoder = (PacketDecoder) ch.pipeline().get(PacketEvents.DECODER_NAME);
-        decoder.user.setConnectionState(connectionState);
-    }
-
-    @Override
     public void inject() {
 
     }
@@ -51,10 +37,5 @@ public class ChannelInjectorImpl implements ChannelInjector {
     @Override
     public void setPlayer(Object o, Object o1) {
 
-    }
-
-    @Override
-    public boolean hasPlayer(Object o) {
-        return false;
     }
 }

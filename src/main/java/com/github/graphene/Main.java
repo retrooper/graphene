@@ -78,7 +78,7 @@ public class Main {
         ServerManagerAbstract serverManager = new ServerManagerAbstract() {
             @Override
             public ServerVersion getVersion() {
-                return ServerVersion.getLatest();
+                return ServerVersion.V_1_18_1;
             }
         };
 
@@ -105,7 +105,7 @@ public class Main {
         PacketEvents.setAPI(NettyPacketEventsBuilder.build(data, injector,
                 protocolManager,
                 serverManager, playerManager));
-        PacketEvents.getAPI().getSettings().debug(true).bStats(true).readOnlyListeners(true);
+        PacketEvents.getAPI().getSettings().debug(true).bStats(true);
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST);
@@ -169,7 +169,7 @@ public class Main {
             ChannelFutureListener listener = future -> SERVER_CHANNELS.add(future.channel());
             ChannelFuture f = b.bind(PORT).addListener(listener);
             Main.LOGGER.info("(" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
-
+            System.out.println("past!");
             Main.runTickLoop();
         } finally {
             workerGroup.shutdownGracefully();
@@ -197,9 +197,9 @@ public class Main {
 
     public static void runTickLoop() {
         //1000ms / 50ms = 20 ticks per second
-        Scanner scanner = new Scanner(System.in);
-        String input = scanner.nextLine();
-        processInput(input);
+        //Scanner scanner = new Scanner(System.in);
+        //String input = scanner.nextLine();
+        //processInput(input);
         while (shouldTick) {
             totalTicks += 1;
             try {

@@ -28,7 +28,7 @@ public class PacketDecoder extends MessageToMessageDecoder<ByteBuf> {
         if (byteBuf.isReadable()) {
             ByteBuf outputBuffer = ctx.alloc().buffer().writeBytes(byteBuf);
             try {
-                PacketEventsImplHelper.handleServerBoundPacket(ctx.channel(), user, player, outputBuffer);
+                PacketEventsImplHelper.handleServerBoundPacket(ctx.channel(), user, player, outputBuffer, true);
                 if (outputBuffer.isReadable()) {
                     out.add(outputBuffer.retain());
                 }

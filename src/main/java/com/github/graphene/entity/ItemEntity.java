@@ -3,19 +3,12 @@ package com.github.graphene.entity;
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
-import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
-import com.github.retrooper.packetevents.protocol.entity.data.provider.EntityDataProvider;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 
 public class ItemEntity {
     public static double PICKUP_DISTANCE = 2;
@@ -87,12 +80,13 @@ public class ItemEntity {
                     EntityTypes.ITEM,
                     pos,
                     0, 0,
-                    1,
+                    1, 0,
                     Optional.of(new Vector3d(0, -4, 0)));
-            List<EntityData> data = EntityDataProvider.builderEntity()
+            /*List<EntityData> data = EntityDataProvider.builderEntity()
                     .customName(Component.text("nice item").color(NamedTextColor.GOLD).asComponent())
                     .customNameVisible(true).build().encode();
-            data.add(new EntityData(8, EntityDataTypes.ITEMSTACK, item));
+            data.add(new EntityData(8, EntityDataTypes.ITEMSTACK, item));*/
+            List<EntityData> data = new ArrayList<>();
             WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId, data);
             //TODO Change holding
             WrapperPlayServerAttachEntity attachEntity = new WrapperPlayServerAttachEntity(spawner.getEntityId(), entityId, false);

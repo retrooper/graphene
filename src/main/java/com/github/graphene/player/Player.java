@@ -5,14 +5,13 @@ import com.github.graphene.util.entity.ClientSettings;
 import com.github.graphene.util.entity.EntityInformation;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
-import com.github.retrooper.packetevents.protocol.chat.ChatPosition;
+import com.github.retrooper.packetevents.protocol.chat.ChatTypes;
+import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage;
+import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage_v1_16;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import com.github.retrooper.packetevents.protocol.player.GameMode;
-import com.github.retrooper.packetevents.protocol.player.HumanoidArm;
-import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.protocol.player.UserProfile;
-import com.github.retrooper.packetevents.util.AdventureSerializer;
+import com.github.retrooper.packetevents.protocol.player.*;
+import com.github.retrooper.packetevents.util.adventure.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
@@ -48,7 +47,7 @@ public class Player {
 
     public Player(Channel channel) {
         this.channel = channel;
-        this.clientSettings = new ClientSettings("", 0, new HashSet<>(), WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
+        this.clientSettings = new ClientSettings("", 0, SkinSection.ALL, WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
     }
 
     public Player(User user) {
@@ -138,16 +137,23 @@ public class Player {
     }
 
     public void writePacket(PacketWrapper<?> wrapper) {
+        wrapper.setServerVersion(getClientVersion().toServerVersion());
         PacketEvents.getAPI().getProtocolManager().writePacket(channel, wrapper);
     }
 
+    public ClientVersion getClientVersion() {
+        User user = PacketEvents.getAPI().getProtocolManager().getUser(channel);
+        return user.getClientVersion();
+    }
+
     public void sendPacket(PacketWrapper<?> wrapper) {
+        //wrapper.setServerVersion(getClientVersion().toServerVersion());
         PacketEvents.getAPI().getProtocolManager().sendPacket(channel, wrapper);
     }
 
     public void sendMessage(Component component) {
-        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(component, ChatPosition.CHAT,
-                new UUID(0L, 0L));
+        ChatMessage msg = new ChatMessage_v1_16(component, ChatTypes.CHAT, new UUID(0L, 0L));
+        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(msg);
         sendPacket(chatMessage);
     }
 
@@ -162,7 +168,7 @@ public class Player {
     }
 
     private void kickLogin(Component component) {
-        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(component.toString());
+        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(component);
         PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
         forceDisconnect();
     }
@@ -183,7 +189,7 @@ public class Player {
     }
 
     public void kick(String legacyReason) {
-        Component component = AdventureSerializer.asAdventure(legacyReason);
+        Component component = AdventureSerializer.fromLegacyFormat(legacyReason);
         kick(component);
     }
 

@@ -1,6 +1,7 @@
 package com.github.graphene.world;
 
 import com.github.graphene.player.Player;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
@@ -52,7 +53,7 @@ public class World {
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
-        return chunk.get(secX, secY, secZ);
+        return chunk.get(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion(), secX, secY, secZ);
     }
 
     public WrappedBlockState getBlockStateAt(Vector3d position) {
@@ -68,7 +69,8 @@ public class World {
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
-        chunk.set(secX, secY, secZ, blockState.getGlobalId());
+        chunk.set(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion(), secX, secY, secZ, blockState.getGlobalId());
+
     }
 
     public void setBlockStateAt(Vector3d position, WrappedBlockState blockState) {

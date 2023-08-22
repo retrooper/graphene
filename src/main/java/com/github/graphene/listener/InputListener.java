@@ -69,7 +69,7 @@ public class InputListener implements PacketListener {
                     if (item == null) {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(64).build();
                     }
-                    equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
+                    equipment.add(new Equipment(EquipmentSlot.MAIN_HAND, item));
                     WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(player.getEntityId(), equipment);
                     p.sendPacket(equipmentPacket);
                 }
@@ -117,10 +117,10 @@ public class InputListener implements PacketListener {
                 if (targetPlayer != null) {
                     //Send us the damage animation packet
                     WrapperPlayServerEntityAnimation animation = new WrapperPlayServerEntityAnimation(targetEntityId,
-                            WrapperPlayServerEntityAnimation.EntityAnimationType.TAKE_DAMAGE);
+                            WrapperPlayServerEntityAnimation.EntityAnimationType.HURT);
                     //TODO Remove optional criticals
                     WrapperPlayServerEntityAnimation animation2 = new WrapperPlayServerEntityAnimation(targetEntityId,
-                            WrapperPlayServerEntityAnimation.EntityAnimationType.CRITICAL_EFFECT);
+                            WrapperPlayServerEntityAnimation.EntityAnimationType.CRITICAL_HIT);
                     //TODO Velocity calculation
                     //TODO Health system
                     player.sendPacket(animation);
@@ -144,7 +144,7 @@ public class InputListener implements PacketListener {
                     if (item == null) {
                         item = ItemStack.builder().type(ItemTypes.AIR).amount(64).build();
                     }
-                    equipment.add(new Equipment(EquipmentSlot.MAINHAND, item));
+                    equipment.add(new Equipment(EquipmentSlot.MAIN_HAND, item));
                     WrapperPlayServerEntityEquipment equipmentPacket = new WrapperPlayServerEntityEquipment(player.getEntityId(), equipment);
                     p.sendPacket(equipmentPacket);
                 }
