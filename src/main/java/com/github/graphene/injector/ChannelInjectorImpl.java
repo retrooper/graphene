@@ -10,6 +10,12 @@ import io.netty.channel.Channel;
 import org.jetbrains.annotations.Nullable;
 
 public class ChannelInjectorImpl implements ChannelInjector {
+
+    @Override
+    public boolean isProxy() {
+        return false;
+    }
+
     @Override
     public boolean isServerBound() {
         return true;

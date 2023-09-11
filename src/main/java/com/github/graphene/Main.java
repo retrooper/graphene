@@ -169,7 +169,6 @@ public class Main {
             ChannelFutureListener listener = future -> SERVER_CHANNELS.add(future.channel());
             ChannelFuture f = b.bind(PORT).addListener(listener);
             Main.LOGGER.info("(" + (Runtime.getRuntime().availableProcessors()) + " worker threads)");
-            System.out.println("past!");
             Main.runTickLoop();
         } finally {
             workerGroup.shutdownGracefully();
