@@ -12,11 +12,11 @@ project.ext.adventureVersion = '4.17.0'
 project.ext.adventureDependencies=["net.kyori:adventure-api:${adventureVersion}", "net.kyori:adventure-text-serializer-gson:${adventureVersion}", "net.kyori:adventure-text-serializer-legacy:${adventureVersion}", "net.kyori:adventure-text-serializer-gson-legacy-impl:${adventureVersion}"]
 project.ext.mainClass = "com.github.graphene.Main"
 
-jar {
-    manifest {
-        attributes 'Main-Class': mainClass
-    }
-}
+//jar {
+  //  manifest {
+    //    attributes 'Main-Class': project.ext.mainClass
+    //}
+//}
 
 repositories {
     mavenCentral()
@@ -60,6 +60,6 @@ tasks.shadowJar.configure {
     classifier = null
 }
 
-tasks.run {
+application {
     mainClass.set project.ext.mainClass
 }
