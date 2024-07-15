@@ -53,23 +53,6 @@ public class EntityInformation {
         this.tickLocation = tickLocation;
     }
 
-
-    public Vector3i getLastBlockActionPosition() {
-        return lastBlockActionPosition;
-    }
-
-    public void setLastBlockActionPosition(Vector3i lastBlockActionPosition) {
-        this.lastBlockActionPosition = lastBlockActionPosition;
-    }
-
-    public WrappedBlockState getLastBlockActionData() {
-        return lastBlockActionData;
-    }
-
-    public void setLastBlockActionData(WrappedBlockState lastBlockActionData) {
-        this.lastBlockActionData = lastBlockActionData;
-    }
-
     public void setOnGround(boolean onGround) {
         this.onGround = onGround;
     }

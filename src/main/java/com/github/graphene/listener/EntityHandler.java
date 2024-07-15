@@ -40,15 +40,14 @@ public class EntityHandler implements PacketListener {
             if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
                 System.out.println("Detected!");
                 WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
-                entityInformation.setLastBlockActionPosition(blockPlacement.getBlockPosition());
-                entityInformation.setLastBlockActionData(StateTypes.GOLD_BLOCK.createBlockState(PacketEvents.getAPI()
-                        .getServerManager().getVersion().toClientVersion()));
-                entityInformation.queueUpdate(UpdateType.BLOCK_PLACE);
+
+                Main.MAIN_WORLD.setBlockStateAt(blockPlacement.getBlockPosition(), WrappedBlockState.getDefaultState(StateTypes.GOLD_BLOCK));
+                System.out.println("Set block state at: " + blockPlacement.getBlockPosition());
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
                 if (playerDigging.getAction() == DiggingAction.FINISHED_DIGGING) {
-                    entityInformation.setLastBlockActionPosition(playerDigging.getBlockPosition());
-                    entityInformation.queueUpdate(UpdateType.BLOCK_DIG);
+                    Main.MAIN_WORLD.setBlockStateAt(playerDigging.getBlockPosition(), WrappedBlockState.getByGlobalId(0));
+                    System.out.println("Gold digger at: " + playerDigging.getBlockPosition());
                 }
             } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
                 player.setClientSettings(new ClientSettings(new WrapperPlayClientSettings(event)));
@@ -117,7 +116,7 @@ public class EntityHandler implements PacketListener {
                                     double deltaX = deltaPosition.getX();
                                     double deltaY = deltaPosition.getY();
                                     double deltaZ = deltaPosition.getZ();
-                                    System.out.println("dx: " + deltaX);
+                                    //System.out.println("dx: " + deltaX);
 
                                     packetQueue.add(new WrapperPlayServerEntityRelativeMove(player.getEntityId(),
                                             deltaX, deltaY, deltaZ, entityInformation.isOnGround()));
@@ -169,39 +168,16 @@ public class EntityHandler implements PacketListener {
                             packetQueue.add(new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.UPDATE_LATENCY, playerDataList));
 
                             break;
-
-                        case BLOCK_DIG:
-                            //Set to air
-                            if (entityInformation.getLastBlockActionPosition() != null) {
-                                WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(entityInformation.getLastBlockActionPosition(), 0);
-                                packetQueue.add(blockChange);
-                                //Update the chunk cache(set to air)
-                                Main.MAIN_WORLD.setBlockStateAt(blockChange.getBlockPosition(),
-                                        WrappedBlockState.getByGlobalId(PacketEvents.getAPI().getServerManager()
-                                                .getVersion().toClientVersion(), 0));
-                            }
-                            break;
-
-                        case BLOCK_PLACE:
-                            if (entityInformation.getLastBlockActionPosition() != null) {
-                                WrapperPlayServerBlockChange blockChange = new WrapperPlayServerBlockChange(
-                                        entityInformation.getLastBlockActionPosition(),
-                                        entityInformation.getLastBlockActionData().getGlobalId());
-
-                                //Update the chunk cache(set to cobble stone always for now) TODO get block in hand
-                                Main.MAIN_WORLD.setBlockStateAt(blockChange.getBlockPosition(),
-                                        blockChange.getBlockState());
-                                System.out.println("Block: " + Main.MAIN_WORLD.getBlockStateAt(blockChange.getBlockPosition()) + ", above: " + Main.MAIN_WORLD.getBlockStateAt(blockChange.getBlockPosition().add(0, 1, 0)));
-
-                                packetQueue.add(blockChange);
-                            }
                     }
+                }
 
-                    for (Player lPlayer : Main.PLAYERS) {
-                        if (player.getEntityId() != lPlayer.getEntityId()) {
-                            for (PacketWrapper<?> wrapper : packetQueue) {
-                                lPlayer.sendPacket(wrapper);
+                for (Player lPlayer : Main.PLAYERS) {
+                    if (player.getEntityId() != lPlayer.getEntityId()) {
+                        for (PacketWrapper<?> wrapper : packetQueue) {
+                            if (wrapper instanceof WrapperPlayServerBlockChange) {
+                                System.out.println("Sent them the block change!");
                             }
+                            lPlayer.sendPacket(wrapper);
                         }
                     }
                 }

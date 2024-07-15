@@ -38,6 +38,7 @@ public class ServerListPingListener implements PacketListener {
             //Add sub component
             responseComponent.add("description", descriptionComponent);
             //We respond by sending them information about the server.
+
             WrapperStatusServerResponse response = new WrapperStatusServerResponse(responseComponent.toString());
             player.sendPacket(response);
         } else if (event.getPacketType() == PacketType.Status.Client.PING) {
@@ -45,8 +46,12 @@ public class ServerListPingListener implements PacketListener {
             //We just respond by sending them the same packet.
             WrapperStatusClientPing ping = new WrapperStatusClientPing(event);
             long time = ping.getTime();
+            System.out.println("Time: " + time);
+
             WrapperStatusServerPong pong = new WrapperStatusServerPong(time);
             player.sendPacket(pong);
+
+            System.out.println("Successfully sent our pong!");
             user.closeConnection();
         }
     }

@@ -13,6 +13,7 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.player.*;
 import com.github.retrooper.packetevents.util.adventure.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
+import com.github.retrooper.packetevents.wrapper.configuration.server.WrapperConfigServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
@@ -28,7 +29,7 @@ import java.util.HashSet;
 import java.util.UUID;
 
 public class Player {
-    private final Channel channel;
+    private final User user;
     private final int entityID = Main.ENTITIES++;
     private GameMode gameMode = GameMode.SURVIVAL;
     private GameMode previousGameMode = null;
@@ -45,13 +46,10 @@ public class Player {
     public final ItemStack[] inventory = new ItemStack[45];
     public int currentSlot;
 
-    public Player(Channel channel) {
-        this.channel = channel;
-        this.clientSettings = new ClientSettings("", 0, SkinSection.ALL, WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
-    }
-
     public Player(User user) {
-        this((Channel) user.getChannel());
+        this.user = user;
+        this.clientSettings = new ClientSettings("", 0, SkinSection.ALL, WrapperPlayClientSettings.ChatVisibility.FULL, HumanoidArm.RIGHT);
+
     }
 
     @Nullable
@@ -85,7 +83,7 @@ public class Player {
     }
 
     public Channel getChannel() {
-        return channel;
+        return (Channel) user.getChannel();
     }
 
     public int getEntityId() {
@@ -133,59 +131,51 @@ public class Player {
     }
 
     public InetSocketAddress getAddress() {
-        return (InetSocketAddress) channel.remoteAddress();
+        return (InetSocketAddress) getChannel().remoteAddress();
     }
 
     public void writePacket(PacketWrapper<?> wrapper) {
         wrapper.setServerVersion(getClientVersion().toServerVersion());
-        PacketEvents.getAPI().getProtocolManager().writePacket(channel, wrapper);
+        PacketEvents.getAPI().getProtocolManager().writePacket(getChannel(), wrapper);
     }
 
     public ClientVersion getClientVersion() {
-        User user = PacketEvents.getAPI().getProtocolManager().getUser(channel);
         return user.getClientVersion();
     }
 
     public void sendPacket(PacketWrapper<?> wrapper) {
         //wrapper.setServerVersion(getClientVersion().toServerVersion());
-        PacketEvents.getAPI().getProtocolManager().sendPacket(channel, wrapper);
+        user.sendPacket(wrapper);
     }
 
     public void sendMessage(Component component) {
-        ChatMessage msg = new ChatMessage_v1_16(component, ChatTypes.CHAT, new UUID(0L, 0L));
-        WrapperPlayServerChatMessage chatMessage = new WrapperPlayServerChatMessage(msg);
-        sendPacket(chatMessage);
+        user.sendMessage(component);
     }
 
     @Deprecated
     public void sendMessage(String message) {
-        //TODO Some improvements
-        sendMessage(Component.text(message).color(NamedTextColor.WHITE).asComponent());
+        user.sendMessage(message);
     }
 
-    public void forceDisconnect() {
-        channel.close();
-    }
-
-    private void kickLogin(Component component) {
-        WrapperLoginServerDisconnect disconnect = new WrapperLoginServerDisconnect(component);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
-        forceDisconnect();
-    }
-
-    private void kickPlay(Component component) {
-        WrapperPlayServerDisconnect disconnect = new WrapperPlayServerDisconnect(component);
-        PacketEvents.getAPI().getPlayerManager().sendPacket(this, disconnect);
-        forceDisconnect();
+    public void closeConnection() {
+        user.closeConnection();
     }
 
     public void kick(Component component) {
         ConnectionState state = PacketEvents.getAPI().getPlayerManager().getConnectionState(this);
-        switch (state) {
-            case HANDSHAKING, STATUS -> forceDisconnect();
-            case LOGIN -> kickLogin(component);
-            case PLAY -> kickPlay(component);
+
+        PacketWrapper<?> wrapper = switch (state) {
+            case HANDSHAKING, STATUS -> null;
+            case CONFIGURATION -> new WrapperConfigServerDisconnect(component);
+            case LOGIN -> new WrapperLoginServerDisconnect(component);
+            case PLAY -> new WrapperPlayServerDisconnect(component);
+        };
+
+        if (wrapper != null) {
+            user.sendPacket(wrapper);
         }
+        closeConnection();
+
     }
 
     public void kick(String legacyReason) {

@@ -8,7 +8,12 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.chat.ChatTypes;
 import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage;
 import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage_v1_16;
+import com.github.retrooper.packetevents.protocol.npc.NPC;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.util.MojangAPIUtil;
+import com.github.retrooper.packetevents.util.PacketEventsImplHelper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
@@ -31,7 +36,8 @@ public class ServerUtil {
         if (user.getConnectionState() == ConnectionState.PLAY) {
             ServerUtil.handlePlayerLeave(player);
         }
-        ProtocolManager.USERS.remove(user.getChannel());
+        UUID uuid = player.getUserProfile() != null ? player.getUserProfile().getUUID() : null;
+        PacketEventsImplHelper.handleDisconnection(user.getChannel(), uuid);
         Main.PLAYERS.remove(player);
     }
 
@@ -67,28 +73,26 @@ public class ServerUtil {
     public static void handlePlayerJoin(User user, Player player) {
         Main.PLAYERS.add(player);
         HoverEvent<HoverEvent.ShowEntity> hoverEvent = HoverEvent.hoverEvent(HoverEvent.Action.SHOW_ENTITY,
-                HoverEvent.ShowEntity.of(Key.key("minecraft:player"),
+                HoverEvent.ShowEntity.showEntity(Key.key("minecraft:player"),
                         player.getUserProfile().getUUID(),
                         Component.text(player.getUsername())));
         ClickEvent clickEvent = ClickEvent.suggestCommand("/tell " + player.getUsername() + " Welcome!");
         Component translatableComponent = Component.translatable("multiplayer.player.joined")
                 .color(NamedTextColor.YELLOW)
-                .args(Component
+                .arguments(Component
                         .text(player.getUsername())
                         .hoverEvent(hoverEvent)
                         .clickEvent(clickEvent).asComponent())
                 .asComponent();
         for (Player p : Main.PLAYERS) {
-            ChatMessage loginChatMsg = new ChatMessage_v1_16(translatableComponent, ChatTypes.CHAT, new UUID(0L, 0L));
-            WrapperPlayServerChatMessage loginMessage = new WrapperPlayServerChatMessage(loginChatMsg);
-
             Component otherDisplayName = Component.text(player.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
             WrapperPlayServerPlayerInfo.PlayerData nextData =
                     new WrapperPlayServerPlayerInfo.PlayerData(otherDisplayName, player.getUserProfile(), player.getGameMode(), 100);
             WrapperPlayServerPlayerInfo nextPlayerInfo =
                     new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, nextData);
+
             //Send every player the login message
-            p.sendPacket(loginMessage);
+            p.sendMessage(translatableComponent);
 
             //Add this joining user to everyone's tab list
             Component displayName = Component.text(p.getUsername()).color(NamedTextColor.DARK_GREEN).asComponent();
@@ -97,22 +101,22 @@ public class ServerUtil {
             WrapperPlayServerPlayerInfo playerInfo = new WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, data);
             player.sendPacket(playerInfo);
 
-            //Add everyone to this user's tab list
+            //Add existing players to this user's tab list
             p.sendPacket(nextPlayerInfo);
         }
 
         Main.LOGGER.info(player.getUsername() + " has joined the server.");
 
         //Spawn MD_5 like npc
-        /*Main.WORKER_THREADS.execute(() -> {
+        Main.WORKER_THREADS.execute(() -> {
             UUID md5UUID = MojangAPIUtil.requestPlayerUUID("md_5");
             UserProfile profile = new UserProfile(md5UUID, "md_5", MojangAPIUtil.requestPlayerTextureProperties(md5UUID));
-            NPC npc = new NPC(profile, Main.ENTITIES++, Component.text("md_5_npc").asComponent(),
+            NPC npc = new NPC(profile, Main.ENTITIES++, GameMode.SURVIVAL, Component.text("md_5_npc").asComponent(),
                     NamedTextColor.BLACK, Component.text("Owner: ").color(NamedTextColor.RED),
                     null);
             npc.setLocation(player.getEntityInformation().getLocation());
             npc.spawn(user.getChannel());
-        });*/
+        });
     }
 
 }

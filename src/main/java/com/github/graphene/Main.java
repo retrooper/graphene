@@ -8,6 +8,7 @@ import com.github.graphene.handler.PacketSplitter;
 import com.github.graphene.injector.ChannelInjectorImpl;
 import com.github.graphene.listener.*;
 import com.github.graphene.player.Player;
+import com.github.graphene.util.ServerUtil;
 import com.github.graphene.world.World;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
@@ -18,6 +19,7 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.ProtocolVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.util.PacketEventsImplHelper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.github.retrooper.packetevents.impl.netty.BuildData;
 import io.github.retrooper.packetevents.impl.netty.factory.NettyPacketEventsBuilder;
@@ -149,6 +151,9 @@ public class Main {
                             Player player = new Player(user);
                             PacketDecoder decoder = new PacketDecoder(user, player);
                             PacketEncoder encoder = new PacketEncoder(user, player);
+
+                            channel.closeFuture().addListener((ChannelFutureListener) future -> ServerUtil.handlePlayerQuit(user, player));
+
                             channel.pipeline()
                                     .addLast("decryption_handler", new ChannelHandlerAdapter() {
                                     })

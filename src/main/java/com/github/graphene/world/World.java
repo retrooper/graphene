@@ -4,6 +4,7 @@ import com.github.graphene.player.Player;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
+import com.github.retrooper.packetevents.protocol.world.chunk.LightData;
 import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
 import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
 import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
@@ -14,6 +15,7 @@ import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.BitSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +25,7 @@ public class World {
     private final Map<Long, Column> chunkMap = new ConcurrentHashMap<>();
 
     private final int minHeight;
+
     public World(int minHeight) {
         this.minHeight = minHeight;
     }
@@ -38,10 +41,10 @@ public class World {
 
     @Nullable
     public BaseChunk getChunkAt(Vector3i blockPosition) {
-        int y = blockPosition.getY();
-        y -= minHeight;
         Column column = getColumnAt(blockPosition);
         if (column != null) {
+            int y = blockPosition.getY();
+            y -= minHeight;
             return column.getChunks()[y >> 4];
         }
         return null;
@@ -53,7 +56,7 @@ public class World {
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
-        return chunk.get(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion(), secX, secY, secZ);
+        return chunk.get(secX, secY, secZ);
     }
 
     public WrappedBlockState getBlockStateAt(Vector3d position) {
@@ -69,8 +72,8 @@ public class World {
         int secX = blockPosition.getX() & 15;
         int secY = blockPosition.getY() & 15;
         int secZ = blockPosition.getZ() & 15;
-        chunk.set(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion(), secX, secY, secZ, blockState.getGlobalId());
-
+        System.out.println("Block there previously (before internal set): " + chunk.get(secX, secY, secZ));
+        chunk.set(secX, secY, secZ, blockState.getGlobalId());
     }
 
     public void setBlockStateAt(Vector3d position, WrappedBlockState blockState) {
@@ -82,7 +85,8 @@ public class World {
 
     public void createWorldForUser(Player player) {
         for (Column column : chunkMap.values()) {
-            WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column);
+            LightData lightData = new LightData(true, new BitSet(), new BitSet(), new BitSet(), new BitSet(), 0, 0, new byte[0][0], new byte[0][0]);
+            WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column, lightData);
             player.sendPacket(chunkData);
         }
     }
@@ -96,29 +100,24 @@ public class World {
     }
 
     public void generateChunkColumn(int chunkX, int chunkZ) {
-        Chunk_v1_18[] chunks = new Chunk_v1_18[16];
+        BaseChunk[] chunks = new BaseChunk[16];
         for (int i = 0; i < chunks.length; i++) {
-            //chunks[i] = new Chunk_v1_8(false);
-            DataPalette biomePalette = DataPalette.createForBiome();
-            biomePalette.set(0, 0, 0, 0);
-            DataPalette chunkPalette = DataPalette.createForChunk();
-            int count = 0;
+            chunks[i] = BaseChunk.create();
             for (int x = 0; x < 16; x++) {
                 for (int y = 0; y < 16; y++) {
                     for (int z = 0; z < 16; z++) {
                         //We only want blocks on the lowest chunk.
                         if (y == 0 && i == 0) {
                             //chunks[i].set(x, y, z, 1);
-                            chunkPalette.set(x, y, z, 1);
+                            chunks[i].set(x, y, z, 1);
                         } else {
                             //chunks[i].set(x, y, z, 0);
-                            chunkPalette.set(x, y, z, 0);
+                            chunks[i].set(x, y, z, 0);
                         }
-                        count++;
+                        ((Chunk_v1_18)chunks[i]).getBiomeData().set(0, 0, 0, 0);
                     }
                 }
             }
-            chunks[i] = new Chunk_v1_18(count, chunkPalette, biomePalette);
         }
         Column column = new Column(chunkX, chunkZ, true, chunks, new TileEntity[0]);
         chunkMap.put(chunkPositionToLong(chunkX, chunkZ), column);
