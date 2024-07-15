@@ -16,10 +16,12 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.*;
+import com.github.retrooper.packetevents.protocol.world.BlockFace;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -40,9 +42,12 @@ public class EntityHandler implements PacketListener {
             if (event.getPacketType() == PacketType.Play.Client.PLAYER_BLOCK_PLACEMENT) {
                 System.out.println("Detected!");
                 WrapperPlayClientPlayerBlockPlacement blockPlacement = new WrapperPlayClientPlayerBlockPlacement(event);
+                BlockFace facing = blockPlacement.getFace();
+                Vector3i blockPos = blockPlacement.getBlockPosition()
+                        .add(facing.getModX(), facing.getModY(), facing.getModZ());
 
-                Main.MAIN_WORLD.setBlockStateAt(blockPlacement.getBlockPosition(), WrappedBlockState.getDefaultState(StateTypes.GOLD_BLOCK));
-                System.out.println("Set block state at: " + blockPlacement.getBlockPosition());
+                Main.MAIN_WORLD.setBlockStateAt(blockPos, WrappedBlockState.getDefaultState(StateTypes.GOLD_BLOCK));
+                System.out.println("Set block state at: " + blockPos);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
                 if (playerDigging.getAction() == DiggingAction.FINISHED_DIGGING) {
