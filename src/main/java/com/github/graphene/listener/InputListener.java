@@ -34,7 +34,7 @@ public class InputListener implements PacketListener {
             Vector3d position = player.getEntityInformation().getLocation().getPosition();
             double shortestDistance = ItemEntity.PICKUP_DISTANCE;
             ItemEntity shortestItemEntity = null;
-            for (ItemEntity itemEntity : Main.ITEM_ENTITIES) {
+            for (ItemEntity itemEntity : Main.MAIN_WORLD.getItems()) {
                 double dist = itemEntity.getPosition().distance(position);
                 if (dist <= shortestDistance) {
                     shortestDistance = dist;

@@ -19,7 +19,6 @@ import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.ProtocolVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
-import com.github.retrooper.packetevents.util.PacketEventsImplHelper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
 import io.github.retrooper.packetevents.impl.netty.BuildData;
 import io.github.retrooper.packetevents.impl.netty.factory.NettyPacketEventsBuilder;
@@ -34,14 +33,19 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import me.tofaa.entitylib.APIConfig;
+import me.tofaa.entitylib.EntityLib;
+import me.tofaa.entitylib.EntityLibAPI;
+import me.tofaa.entitylib.Platform;
+import me.tofaa.entitylib.standalone.StandaloneEntityLibPlatform;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Constructor;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Queue;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -49,8 +53,8 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class Main {
-    public static boolean shouldTick = true;
-    public static volatile boolean shouldRunKeepAliveLoop = true;
+    public static boolean KEEP_TICKING = true;
+    public static volatile boolean KEEP_ALIVES = true;
     public static String SERVER_VERSION_NAME;
     public static int SERVER_PROTOCOL_VERSION;
     public static final int MAX_PLAYERS = 1000;
@@ -61,10 +65,9 @@ public class Main {
     public static final ExecutorService WORKER_THREADS = Executors.newFixedThreadPool(2);
     public static final int PORT = 25999;
     public static final Queue<Player> PLAYERS = new ConcurrentLinkedQueue<>();
-    public static long totalTicks = 0L;
+    public static long TOTAL_TICKS = 0L;
     public static boolean ONLINE_MODE = false;
     public static int ENTITIES = 0;
-    public static final Queue<ItemEntity> ITEM_ENTITIES = new ConcurrentLinkedQueue<>();
     public static final World MAIN_WORLD = new World();
     public static final Set<Channel> SERVER_CHANNELS = new HashSet<>();
 
@@ -107,7 +110,7 @@ public class Main {
         PacketEvents.setAPI(NettyPacketEventsBuilder.build(data, injector,
                 protocolManager,
                 serverManager, playerManager));
-        PacketEvents.getAPI().getSettings().debug(true).bStats(true);
+        PacketEvents.getAPI().getSettings().debug(true);
         PacketEvents.getAPI().load();
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ServerListPingListener(), PacketListenerPriority.LOWEST);
@@ -120,12 +123,17 @@ public class Main {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new InputListener(), PacketListenerPriority.LOWEST);
         PacketEvents.getAPI().init();
+
+        Constructor<?> platformConstructor = StandaloneEntityLibPlatform.class.getDeclaredConstructor();
+        platformConstructor.setAccessible(true);
+        EntityLib.init((Platform<?>) platformConstructor.newInstance(), new APIConfig(PacketEvents.getAPI()));
+
         SERVER_VERSION_NAME = PacketEvents.getAPI().getServerManager().getVersion().getReleaseName();
         SERVER_PROTOCOL_VERSION = PacketEvents.getAPI().getServerManager().getVersion().getProtocolVersion();
         Main.LOGGER.info("Starting Graphene Server. Version: " + SERVER_VERSION_NAME + ". Online mode: " + ONLINE_MODE);
 
         Main.LOGGER.info("Preparing chunks...");
-        MAIN_WORLD.generateChunkRectangle(1, 1);
+        MAIN_WORLD.generateRectangularWorld(1, 1);
         Main.LOGGER.info("Binding to port... " + PORT);
         EventLoopGroup bossGroup;
         EventLoopGroup workerGroup;
@@ -204,8 +212,8 @@ public class Main {
         //Scanner scanner = new Scanner(System.in);
         //String input = scanner.nextLine();
         //processInput(input);
-        while (shouldTick) {
-            totalTicks += 1;
+        while (KEEP_TICKING) {
+            TOTAL_TICKS += 1;
             try {
                 Thread.sleep(50L);
             } catch (InterruptedException e) {
@@ -216,7 +224,7 @@ public class Main {
     }
 
     public static void runKeepAliveLoop() {
-        while (shouldRunKeepAliveLoop) {
+        while (KEEP_ALIVES) {
             try {
                 Thread.sleep(50L);
             } catch (InterruptedException e) {

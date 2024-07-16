@@ -45,13 +45,26 @@ public class EntityHandler implements PacketListener {
                 BlockFace facing = blockPlacement.getFace();
                 Vector3i blockPos = blockPlacement.getBlockPosition()
                         .add(facing.getModX(), facing.getModY(), facing.getModZ());
+                WrappedBlockState blockInHand = null;
+                if (player.getCurrentItem() != null && player.getCurrentItem().getType().getPlacedType() != null) {
+                    blockInHand = player.getCurrentItem().getType().getPlacedType().createBlockState();
+                }
 
-                Main.MAIN_WORLD.setBlockStateAt(blockPos, WrappedBlockState.getDefaultState(StateTypes.GOLD_BLOCK));
+                Main.MAIN_WORLD.setBlockStateAt(blockPos, blockInHand);
+
+                for (Player p : Main.PLAYERS) {
+                    WrapperPlayServerBlockChange bc = new WrapperPlayServerBlockChange(blockPos, blockInHand.getGlobalId());
+                    p.sendPacket(bc);
+                }
                 System.out.println("Set block state at: " + blockPos);
             } else if (event.getPacketType() == PacketType.Play.Client.PLAYER_DIGGING) {
                 WrapperPlayClientPlayerDigging playerDigging = new WrapperPlayClientPlayerDigging(event);
                 if (playerDigging.getAction() == DiggingAction.FINISHED_DIGGING) {
                     Main.MAIN_WORLD.setBlockStateAt(playerDigging.getBlockPosition(), WrappedBlockState.getByGlobalId(0));
+                    for (Player p : Main.PLAYERS) {
+                        WrapperPlayServerBlockChange bc = new WrapperPlayServerBlockChange(playerDigging.getBlockPosition(), 0);
+                        p.sendPacket(bc);
+                    }
                     System.out.println("Gold digger at: " + playerDigging.getBlockPosition());
                 }
             } else if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
@@ -149,8 +162,7 @@ public class EntityHandler implements PacketListener {
                                         (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
 
 
-                                byte headYaw = (byte) ((int) (currentLocation.getYaw() * 256.0F / 360.0F));
-                                packetQueue.add(new WrapperPlayServerEntityHeadLook(player.getEntityId(), headYaw));
+                                packetQueue.add(new WrapperPlayServerEntityHeadLook(player.getEntityId(), currentLocation.getYaw()));
                             }
 
                             break;
@@ -158,8 +170,7 @@ public class EntityHandler implements PacketListener {
                         case ANGLE:
                             packetQueue.add(new WrapperPlayServerEntityRotation(player.getEntityId(),
                                     (byte) currentLocation.getYaw(), (byte) currentLocation.getPitch(), entityInformation.isOnGround()));
-                            byte headYaw = (byte) ((int) (currentLocation.getYaw() * 256.0F / 360.0F));
-                            packetQueue.add(new WrapperPlayServerEntityHeadLook(player.getEntityId(), headYaw));
+                            packetQueue.add(new WrapperPlayServerEntityHeadLook(player.getEntityId(), currentLocation.getYaw()));
 
                             break;
                         case METADATA:
@@ -179,9 +190,6 @@ public class EntityHandler implements PacketListener {
                 for (Player lPlayer : Main.PLAYERS) {
                     if (player.getEntityId() != lPlayer.getEntityId()) {
                         for (PacketWrapper<?> wrapper : packetQueue) {
-                            if (wrapper instanceof WrapperPlayServerBlockChange) {
-                                System.out.println("Sent them the block change!");
-                            }
                             lPlayer.sendPacket(wrapper);
                         }
                     }

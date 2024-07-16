@@ -2,11 +2,8 @@ package com.github.graphene.listener;
 
 import com.github.graphene.Main;
 import com.github.graphene.player.Player;
-import com.github.graphene.util.ChunkHelper;
 import com.github.graphene.util.ServerUtil;
 import com.github.graphene.util.entity.EntityInformation;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import com.github.retrooper.packetevents.netty.buffer.UnpooledByteBufAllocationHelper;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -24,8 +21,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class JoinManager {
     private final static NBTCompound DIMENSION_NBT;
@@ -98,6 +94,16 @@ public class JoinManager {
         List<Enchantment> enchantments = new ArrayList<>();
         enchantments.add(Enchantment.builder().type(EnchantmentTypes.BLOCK_EFFICIENCY).level(1).build());
         pickaxe.setEnchantments(enchantments, user.getClientVersion());
+
+
+        /*Map<ResourceLocation, List<WrapperPlayServerTags.Tag>> map = new HashMap<>();
+        map.put(ResourceLocation.minecraft("item"), Collections.singletonList(new WrapperPlayServerTags.Tag(
+                ItemTags.PICKAXES.getName(), Collections.singletonList(0)
+        )));
+        WrapperPlayServerTags tags = new WrapperPlayServerTags(map);
+*/
+
+
         player.setHotbarIndex(1, pickaxe);
         player.setHotbarIndex(2, ItemStack.builder().type(ItemTypes.COBBLESTONE).amount(64).build());
         player.updateHotbar();
@@ -107,7 +113,7 @@ public class JoinManager {
         WrapperPlayServerEntityStatus entityStatus = new WrapperPlayServerEntityStatus(player.getEntityId(), 28);
         player.sendPacket(entityStatus);
 
-        Main.MAIN_WORLD.createWorldForUser(player);
+        Main.MAIN_WORLD.presentWorld(player);
 
         //Actually spawn them into the world
         WrapperPlayServerPlayerPositionAndLook positionAndLook =

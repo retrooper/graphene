@@ -1,13 +1,12 @@
 package com.github.graphene.world;
 
+import com.github.graphene.entity.ItemEntity;
 import com.github.graphene.player.Player;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.world.chunk.BaseChunk;
 import com.github.retrooper.packetevents.protocol.world.chunk.Column;
 import com.github.retrooper.packetevents.protocol.world.chunk.LightData;
 import com.github.retrooper.packetevents.protocol.world.chunk.TileEntity;
 import com.github.retrooper.packetevents.protocol.world.chunk.impl.v_1_18.Chunk_v1_18;
-import com.github.retrooper.packetevents.protocol.world.chunk.palette.DataPalette;
 import com.github.retrooper.packetevents.protocol.world.states.WrappedBlockState;
 import com.github.retrooper.packetevents.util.MathUtil;
 import com.github.retrooper.packetevents.util.Vector3d;
@@ -15,7 +14,9 @@ import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +24,7 @@ import static com.github.graphene.util.ChunkHelper.chunkPositionToLong;
 
 public class World {
     private final Map<Long, Column> chunkMap = new ConcurrentHashMap<>();
+    private final List<ItemEntity> items = new ArrayList<>();
 
     private final int minHeight;
 
@@ -32,6 +34,10 @@ public class World {
 
     public World() {
         this(0);
+    }
+
+    public List<ItemEntity> getItems() {
+        return items;
     }
 
     @Nullable
@@ -83,7 +89,7 @@ public class World {
                 MathUtil.floor(position.z)), blockState);
     }
 
-    public void createWorldForUser(Player player) {
+    public void presentWorld(Player player) {
         for (Column column : chunkMap.values()) {
             LightData lightData = new LightData(true, new BitSet(), new BitSet(), new BitSet(), new BitSet(), 0, 0, new byte[0][0], new byte[0][0]);
             WrapperPlayServerChunkData chunkData = new WrapperPlayServerChunkData(column, lightData);
@@ -91,7 +97,7 @@ public class World {
         }
     }
 
-    public void generateChunkRectangle(int width, int length) {
+    public void generateRectangularWorld(int width, int length) {
         for (int i = 0; i < length; i++) {
             for (int j = 0; j < width; j++) {
                 generateChunkColumn(j, i);
@@ -99,7 +105,7 @@ public class World {
         }
     }
 
-    public void generateChunkColumn(int chunkX, int chunkZ) {
+    protected void generateChunkColumn(int chunkX, int chunkZ) {
         BaseChunk[] chunks = new BaseChunk[16];
         for (int i = 0; i < chunks.length; i++) {
             chunks[i] = BaseChunk.create();
